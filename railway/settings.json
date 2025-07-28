@@ -1,0 +1,7 @@
+{
+  "build": {
+    "env": {
+      "JAVA_VERSION": "21"
+    }
+  }
+}
