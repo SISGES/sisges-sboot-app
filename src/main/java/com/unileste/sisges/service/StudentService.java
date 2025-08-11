@@ -1,5 +1,6 @@
 package com.unileste.sisges.service;
 
+import com.unileste.sisges.controller.dto.request.CreateStudentDto;
 import com.unileste.sisges.controller.dto.request.SearchStudentDto;
 import com.unileste.sisges.controller.dto.response.StudentResponseDto;
 import com.unileste.sisges.mapper.StudentMapper;
@@ -18,13 +19,17 @@ import org.springframework.stereotype.Service;
 public class StudentService {
 
     private final StudentRepository studentRepository;
-    private final StudentMapper studentMapper;
 
     public Page<StudentResponseDto> search(SearchStudentDto dto) {
         Specification<Student> spec = StudentSpecification.filterByDto(dto);
         Pageable pageable = PageRequest.of(dto == null ? 0 : dto.getPage(), dto == null ? 20 : dto.getSize());
 
         return studentRepository.findAll(spec, pageable)
-                .map(studentMapper::toDTO);
+                .map(StudentMapper::toStudentResponseDto);
+    }
+
+    public StudentResponseDto create(CreateStudentDto request) {
+        Student student = StudentMapper.toStudent(request);
+        return StudentMapper.toStudentResponseDto(studentRepository.save(student));
     }
 }

@@ -3,12 +3,18 @@ package com.unileste.sisges.model;
 import com.unileste.sisges.enums.converter.GenderENUM;
 import com.unileste.sisges.enums.converter.GenderEnumConverter;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "student", schema = "sisges")
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Student {
 
     @Id
