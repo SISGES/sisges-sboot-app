@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -55,6 +56,27 @@ public class StudentService {
             return null;
         } else {
             return students.getFirst().getRegister();
+        }
+    }
+
+    public StudentResponseDto findById(Integer id) {
+        Optional<Student> optStudent = studentRepository.findById(id);
+        if (optStudent.isEmpty() || optStudent.get().getDeletedAt() != null) {
+            return null;
+        } else {
+            Student student = optStudent.get();
+            return StudentMapper.toStudentResponseDto(student);
+        }
+    }
+
+    public Student delete(Integer id) {
+        Optional<Student> optStudent = studentRepository.findById(id);
+        if (optStudent.isEmpty() || optStudent.get().getDeletedAt() != null) {
+            return null;
+        } else {
+            Student student = optStudent.get();
+            student.setDeletedAt(LocalDateTime.now());
+            return studentRepository.save(student);
         }
     }
 }
