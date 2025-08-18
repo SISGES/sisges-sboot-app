@@ -14,6 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class StudentService {
@@ -30,6 +32,7 @@ public class StudentService {
 
     public StudentResponseDto create(CreateStudentDto request) {
         Student student = StudentMapper.toStudent(request);
+        student.setCreatedAt(LocalDateTime.now());
         return StudentMapper.toStudentResponseDto(studentRepository.save(student));
     }
 }

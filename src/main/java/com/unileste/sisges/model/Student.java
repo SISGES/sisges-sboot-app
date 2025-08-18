@@ -22,7 +22,7 @@ public class Student {
     private Integer id;
     @Column(nullable = false, unique = true, length = 10)
     private String register;
-    @Column(name = "\"name\"", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 100)
     private String name;
     @Column(name = "responsible1_name", nullable = false, length = 100)
     private String responsible1Name;
