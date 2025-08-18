@@ -1,5 +1,6 @@
 package com.unileste.sisges.service;
 
+import com.unileste.sisges.constants.Constants;
 import com.unileste.sisges.controller.dto.request.CreateStudentDto;
 import com.unileste.sisges.controller.dto.request.SearchStudentDto;
 import com.unileste.sisges.controller.dto.response.StudentResponseDto;
@@ -11,10 +12,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,6 +36,25 @@ public class StudentService {
     public StudentResponseDto create(CreateStudentDto request) {
         Student student = StudentMapper.toStudent(request);
         student.setCreatedAt(LocalDateTime.now());
+
+        String lastRegister = getLastRegister();
+
+        if (lastRegister == null) {
+            student.setRegister(Constants.REGISTER_PREFIX + "1000");
+        } else {
+            int lastRegisterNumbers = Integer.parseInt(lastRegister.substring(1)) + 1;
+            student.setRegister(Constants.REGISTER_PREFIX + lastRegisterNumbers);
+        }
+
         return StudentMapper.toStudentResponseDto(studentRepository.save(student));
+    }
+
+    private String getLastRegister() {
+        List<Student> students = studentRepository.findAll(Sort.by(Sort.Direction.DESC, "Register"));
+        if (students.isEmpty()) {
+            return null;
+        } else {
+            return students.getFirst().getRegister();
+        }
     }
 }

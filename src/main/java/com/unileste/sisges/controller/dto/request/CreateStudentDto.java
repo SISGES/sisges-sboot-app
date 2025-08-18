@@ -13,8 +13,6 @@ import java.time.LocalDate;
 public class CreateStudentDto {
 
     @NotBlank
-    private String register;
-    @NotBlank
     private String name;
     @NotBlank
     private String responsible1Name;

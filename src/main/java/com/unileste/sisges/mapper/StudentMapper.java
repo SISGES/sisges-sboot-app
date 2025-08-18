@@ -19,7 +19,6 @@ public class StudentMapper {
     public static Student toStudent(CreateStudentDto request) {
         return Student
                 .builder()
-                .register(request.getRegister())
                 .name(request.getName())
                 .responsible1Name(request.getResponsible1Name())
                 .responsible1Phone(request.getResponsible1Phone())
