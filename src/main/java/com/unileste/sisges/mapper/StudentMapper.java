@@ -3,7 +3,9 @@ package com.unileste.sisges.mapper;
 import com.unileste.sisges.controller.dto.request.CreateStudentDto;
 import com.unileste.sisges.controller.dto.response.StudentResponseDto;
 import com.unileste.sisges.model.Student;
+import lombok.experimental.UtilityClass;
 
+@UtilityClass
 public class StudentMapper {
 
     public static StudentResponseDto toStudentResponseDto(Student request) {
