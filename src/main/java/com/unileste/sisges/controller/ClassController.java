@@ -1,16 +1,14 @@
 package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.request.CreateClassRequestDto;
+import com.unileste.sisges.controller.dto.request.UpdateClassRequestDto;
 import com.unileste.sisges.controller.dto.response.ClassResponseDto;
 import com.unileste.sisges.exception.InvalidPayloadException;
 import com.unileste.sisges.service.ClassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/class")
@@ -24,6 +22,15 @@ public class ClassController {
         ClassResponseDto response = classService.create(request);
         if (response == null) {
             throw new InvalidPayloadException(String.format("Já existe uma turma com o mesmo nome (%s).", request.getName()));
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/update/{id}")
+    public ResponseEntity<ClassResponseDto> update(@RequestBody @Valid UpdateClassRequestDto request, @PathVariable Integer id) throws InvalidPayloadException {
+        ClassResponseDto response = classService.update(request, id);
+        if (response == null) {
+            throw new InvalidPayloadException("Ocorreu um erro. Verifique se não está inserindo um nome já existente.");
         }
         return ResponseEntity.ok(response);
     }
