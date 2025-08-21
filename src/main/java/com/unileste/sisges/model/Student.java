@@ -41,7 +41,7 @@ public class Student {
     @Convert(converter = GenderEnumConverter.class)
     @Column(name = "gender_id", length = 2)
     private GenderENUM gender;
-    @Column(name = "created_at")
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
