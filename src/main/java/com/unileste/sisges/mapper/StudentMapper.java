@@ -13,6 +13,8 @@ public class StudentMapper {
                 .builder()
                 .register(request.getRegister())
                 .name(request.getName())
+                .classEntity(ClassMapper.toResponse(request.getClassEntity()))
+                .email(request.getEmail())
                 .birthDate(request.getBirthDate())
                 .gender(request.getGender())
                 .build();
@@ -22,6 +24,7 @@ public class StudentMapper {
         return Student
                 .builder()
                 .name(request.getName())
+                .email(request.getEmail())
                 .responsible1Name(request.getResponsible1Name())
                 .responsible1Phone(request.getResponsible1Phone())
                 .responsible1Email(request.getResponsible1Email())

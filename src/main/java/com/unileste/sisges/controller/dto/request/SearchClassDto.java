@@ -7,14 +7,11 @@ import java.time.LocalDateTime;
 
 @Getter
 @Setter
-public class SearchStudentDto {
+public class SearchClassDto {
     private LocalDateTime fromDate;
     private LocalDateTime toDate;
 
-    private String register;
     private String name;
-    private String responsible1Name;
-    private String email;
 
     private Integer page = 0;
     private Integer size = 20;

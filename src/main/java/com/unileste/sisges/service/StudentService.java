@@ -5,7 +5,9 @@ import com.unileste.sisges.controller.dto.request.CreateStudentDto;
 import com.unileste.sisges.controller.dto.request.SearchStudentDto;
 import com.unileste.sisges.controller.dto.response.StudentResponseDto;
 import com.unileste.sisges.mapper.StudentMapper;
+import com.unileste.sisges.model.ClassEntity;
 import com.unileste.sisges.model.Student;
+import com.unileste.sisges.repository.ClassRepository;
 import com.unileste.sisges.repository.StudentRepository;
 import com.unileste.sisges.specification.StudentSpecification;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import java.util.Optional;
 public class StudentService {
 
     private final StudentRepository studentRepository;
+    private final ClassRepository classRepository;
 
     public Page<StudentResponseDto> search(SearchStudentDto dto) {
         Specification<Student> spec = StudentSpecification.filterByDto(dto);
@@ -35,7 +38,10 @@ public class StudentService {
     }
 
     public StudentResponseDto create(CreateStudentDto request) {
+        Optional<ClassEntity> optClassEntity = classRepository.findById(request.getClassId());
+        if (optClassEntity.isEmpty()) return null;
         Student student = StudentMapper.toStudent(request);
+        student.setClassEntity(optClassEntity.get());
         student.setCreatedAt(LocalDateTime.now());
 
         String lastRegister = getLastRegister();

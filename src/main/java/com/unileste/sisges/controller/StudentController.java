@@ -24,7 +24,11 @@ public class StudentController {
 
     @PostMapping("/create")
     public ResponseEntity<StudentResponseDto> create(@RequestBody CreateStudentDto request) {
-        return ResponseEntity.ok(studentService.create(request));
+        StudentResponseDto response = studentService.create(request);
+        if (response == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{id}")

@@ -15,6 +15,8 @@ public class CreateStudentDto {
     @NotBlank
     private String name;
     @NotBlank
+    private String email;
+    @NotBlank
     private String responsible1Name;
     @NotBlank
     private String responsible1Phone;
@@ -27,4 +29,6 @@ public class CreateStudentDto {
     private LocalDate birthDate;
     @NotNull
     private GenderENUM gender;
+    @NotNull
+    private Integer classId;
 }

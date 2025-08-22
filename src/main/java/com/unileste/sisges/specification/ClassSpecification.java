@@ -1,7 +1,7 @@
 package com.unileste.sisges.specification;
 
-import com.unileste.sisges.controller.dto.request.SearchStudentDto;
-import com.unileste.sisges.model.Student;
+import com.unileste.sisges.controller.dto.request.SearchClassDto;
+import com.unileste.sisges.model.ClassEntity;
 import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @UtilityClass
-public class StudentSpecification {
+public class ClassSpecification {
 
-    public static Specification<Student> filterByDto(SearchStudentDto dto) {
+    public static Specification<ClassEntity> filterByDto(SearchClassDto dto) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isNull(root.get("deletedAt")));
@@ -24,20 +24,8 @@ public class StudentSpecification {
                 predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), dto.getToDate()));
             }
 
-            if (dto.getRegister() != null) {
-                predicates.add(cb.equal(root.get("register"), dto.getRegister()));
-            }
-
             if (dto.getName() != null) {
                 predicates.add(cb.equal(root.get("name"), dto.getName()));
-            }
-
-            if (dto.getResponsible1Name() != null) {
-                predicates.add(cb.equal(root.get("responsible1Name"), dto.getResponsible1Name()));
-            }
-
-            if (dto.getEmail() != null) {
-                predicates.add(cb.like(cb.lower(root.get("responsible1Email")), "%" + dto.getEmail().toLowerCase() + "%"));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

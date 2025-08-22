@@ -24,6 +24,8 @@ public class Student {
     private String register;
     @Column(name = "name", nullable = false, length = 100)
     private String name;
+    @Column(name = "email", nullable = false, length = 254)
+    private String email;
     @Column(name = "responsible1_name", nullable = false, length = 100)
     private String responsible1Name;
     @Column(name = "responsible1_phone", nullable = false, length = 15)
@@ -41,6 +43,9 @@ public class Student {
     @Convert(converter = GenderEnumConverter.class)
     @Column(name = "gender_id", length = 2)
     private GenderENUM gender;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", referencedColumnName = "id")
+    ClassEntity classEntity;
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
     @Column(name = "updated_at")
