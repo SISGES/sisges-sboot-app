@@ -1,6 +1,6 @@
 package com.unileste.sisges.model;
 
-import com.unileste.sisges.enums.converter.GenderENUM;
+import com.unileste.sisges.enums.GenderENUM;
 import com.unileste.sisges.enums.converter.GenderEnumConverter;
 import jakarta.persistence.*;
 import lombok.*;

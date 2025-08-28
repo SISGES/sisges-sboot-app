@@ -1,4 +1,4 @@
-package com.unileste.sisges.enums.converter;
+package com.unileste.sisges.enums;
 
 public enum GenderENUM {
 
