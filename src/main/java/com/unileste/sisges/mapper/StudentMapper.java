@@ -1,38 +1,21 @@
 package com.unileste.sisges.mapper;
 
-import com.unileste.sisges.controller.dto.request.CreateStudentDto;
-import com.unileste.sisges.controller.dto.response.StudentResponseDto;
+import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.model.Student;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass
 public class StudentMapper {
 
-    public static StudentResponseDto toStudentResponseDto(Student request) {
-        return StudentResponseDto
+    public static StudentResponse toResponse(Student request) {
+        return StudentResponse
                 .builder()
-                .register(request.getRegister())
-                .name(request.getName())
-                .classEntity(ClassMapper.toResponse(request.getClassEntity()))
-                .email(request.getEmail())
-                .birthDate(request.getBirthDate())
-                .gender(request.getGender())
-                .build();
-    }
-
-    public static Student toStudent(CreateStudentDto request) {
-        return Student
-                .builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .responsible1Name(request.getResponsible1Name())
-                .responsible1Phone(request.getResponsible1Phone())
-                .responsible1Email(request.getResponsible1Email())
-                .responsible2Name(request.getResponsible2Name())
-                .responsible2Phone(request.getResponsible2Phone())
-                .responsible2Email(request.getResponsible2Email())
-                .birthDate(request.getBirthDate())
-                .gender(request.getGender())
+                .register(request.getBaseData().getRegister())
+                .name(request.getBaseData().getName())
+                .classEntity(request.getCurrentClass() != null ? ClassMapper.toResponse(request.getCurrentClass()) : null)
+                .email(request.getBaseData().getEmail())
+                .birthDate(request.getBaseData().getBirthDate())
+                .gender(request.getBaseData().getGender())
                 .build();
     }
 }

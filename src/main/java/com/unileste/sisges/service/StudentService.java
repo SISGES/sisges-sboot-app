@@ -1,12 +1,12 @@
 package com.unileste.sisges.service;
 
-import com.unileste.sisges.constants.Constants;
-import com.unileste.sisges.controller.dto.request.CreateStudentDto;
+import com.unileste.sisges.controller.dto.request.StudentRequest;
 import com.unileste.sisges.controller.dto.request.SearchStudentDto;
-import com.unileste.sisges.controller.dto.response.StudentResponseDto;
+import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.mapper.StudentMapper;
-import com.unileste.sisges.model.ClassEntity;
+import com.unileste.sisges.model.SchoolClass;
 import com.unileste.sisges.model.Student;
+import com.unileste.sisges.model.User;
 import com.unileste.sisges.repository.ClassRepository;
 import com.unileste.sisges.repository.StudentRepository;
 import com.unileste.sisges.specification.StudentSpecification;
@@ -14,12 +14,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -28,60 +26,51 @@ public class StudentService {
 
     private final StudentRepository studentRepository;
     private final ClassRepository classRepository;
+    private final UserService userService;
+    private final RegisterService registerService;
 
-    public Page<StudentResponseDto> search(SearchStudentDto dto) {
+    public Page<StudentResponse> search(SearchStudentDto dto) {
         Specification<Student> spec = StudentSpecification.filterByDto(dto);
         Pageable pageable = PageRequest.of(dto == null ? 0 : dto.getPage(), dto == null ? 20 : dto.getSize());
 
         return studentRepository.findAll(spec, pageable)
-                .map(StudentMapper::toStudentResponseDto);
+                .map(StudentMapper::toResponse);
     }
 
-    public StudentResponseDto create(CreateStudentDto request) {
-        Optional<ClassEntity> optClassEntity = classRepository.findById(request.getClassId());
-        if (optClassEntity.isEmpty()) return null;
-        Student student = StudentMapper.toStudent(request);
-        student.setClassEntity(optClassEntity.get());
-        student.setCreatedAt(LocalDateTime.now());
-
-        String lastRegister = getLastRegister();
-
-        if (lastRegister == null) {
-            student.setRegister(Constants.REGISTER_PREFIX + "1000");
-        } else {
-            int lastRegisterNumbers = Integer.parseInt(lastRegister.substring(1)) + 1;
-            student.setRegister(Constants.REGISTER_PREFIX + lastRegisterNumbers);
+    public StudentResponse create(StudentRequest request) {
+        User user = userService.findById(request.getUserId());
+        SchoolClass studentClass = null;
+        if (request.getClassId() != null) {
+            Optional<SchoolClass> optClassEntity = classRepository.findById(request.getClassId());
+            studentClass = optClassEntity.orElse(null);
         }
+        if (user == null) return null;
+        Student student = Student
+                .builder()
+                .currentClass(studentClass)
+                .baseData(user)
+                .build();
 
-        return StudentMapper.toStudentResponseDto(studentRepository.save(student));
+        return StudentMapper.toResponse(studentRepository.save(student));
     }
 
-    private String getLastRegister() {
-        List<Student> students = studentRepository.findAll(Sort.by(Sort.Direction.DESC, "Register"));
-        if (students.isEmpty()) {
-            return null;
-        } else {
-            return students.getFirst().getRegister();
-        }
-    }
-
-    public StudentResponseDto findById(Integer id) {
+    public StudentResponse findById(Integer id) {
         Optional<Student> optStudent = studentRepository.findById(id);
-        if (optStudent.isEmpty() || optStudent.get().getDeletedAt() != null) {
+        if (optStudent.isEmpty() || optStudent.get().getBaseData().getDeletedAt() != null) {
             return null;
         } else {
             Student student = optStudent.get();
-            return StudentMapper.toStudentResponseDto(student);
+            return StudentMapper.toResponse(student);
         }
     }
 
     public Student delete(Integer id) {
         Optional<Student> optStudent = studentRepository.findById(id);
-        if (optStudent.isEmpty() || optStudent.get().getDeletedAt() != null) {
+        if (optStudent.isEmpty() || optStudent.get().getBaseData().getDeletedAt() != null) {
             return null;
         } else {
             Student student = optStudent.get();
-            student.setDeletedAt(LocalDateTime.now());
+            student.getBaseData().setDeletedAt(LocalDateTime.now());
             return studentRepository.save(student);
         }
     }

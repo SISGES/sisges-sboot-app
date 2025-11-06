@@ -1,9 +1,9 @@
 package com.unileste.sisges.mapper;
 
 import com.unileste.sisges.controller.dto.request.CreateClassRequestDto;
-import com.unileste.sisges.controller.dto.response.ClassResponseDto;
-import com.unileste.sisges.controller.dto.response.DetailedClassResponseDto;
-import com.unileste.sisges.model.ClassEntity;
+import com.unileste.sisges.controller.dto.response.ClassResponse;
+import com.unileste.sisges.controller.dto.response.DetailedClassResponse;
+import com.unileste.sisges.model.SchoolClass;
 import lombok.experimental.UtilityClass;
 
 import java.time.LocalDateTime;
@@ -11,16 +11,16 @@ import java.time.LocalDateTime;
 @UtilityClass
 public class ClassMapper {
 
-    public static ClassEntity toEntity(CreateClassRequestDto entity) {
-        return ClassEntity
+    public static SchoolClass toEntity(CreateClassRequestDto entity) {
+        return SchoolClass
                 .builder()
                 .name(entity.getName())
                 .createdAt(LocalDateTime.now())
                 .build();
     }
 
-    public static ClassResponseDto toResponse(ClassEntity entity) {
-        return ClassResponseDto
+    public static ClassResponse toResponse(SchoolClass entity) {
+        return ClassResponse
                 .builder()
                 .id(entity.getId())
                 .name(entity.getName())
@@ -28,11 +28,11 @@ public class ClassMapper {
                 .build();
     }
 
-    public static DetailedClassResponseDto toDetailedResponse(ClassEntity entity) {
-        return DetailedClassResponseDto
+    public static DetailedClassResponse toDetailedResponse(SchoolClass entity) {
+        return DetailedClassResponse
                 .builder()
                 .name(entity.getName())
-                .students(entity.getStudents().stream().map(StudentMapper::toStudentResponseDto).toList())
+                .students(entity.getStudents().stream().map(StudentMapper::toResponse).toList())
                 .createdAt(entity.getCreatedAt())
                 .build();
     }

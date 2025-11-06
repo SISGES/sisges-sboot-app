@@ -11,4 +11,8 @@ public class LoginResponse {
 
     private String token;
     private long expiresIn;
+    private String name;
+    private String email;
+    private String register;
+    private String role;
 }

@@ -1,5 +1,6 @@
 package com.unileste.sisges.enums.converter;
 
+import com.unileste.sisges.enums.GenderENUM;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
