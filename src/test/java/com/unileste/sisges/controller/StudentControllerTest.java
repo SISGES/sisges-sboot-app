@@ -1,9 +1,10 @@
 package com.unileste.sisges.controller;
 
-import com.unileste.sisges.controller.dto.request.CreateStudentDto;
+import com.unileste.sisges.controller.dto.request.StudentRequest;
 import com.unileste.sisges.controller.dto.request.SearchStudentDto;
-import com.unileste.sisges.controller.dto.response.StudentResponseDto;
+import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.model.Student;
+import com.unileste.sisges.model.User;
 import com.unileste.sisges.service.StudentService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,10 +37,10 @@ class StudentControllerTest {
     @DisplayName("deveRetornarListaPaginada")
     void deveRetornarListaPaginada() {
         SearchStudentDto searchStudentDto = new SearchStudentDto();
-        StudentResponseDto studentResponseDto = getResponseDto();
-        when(studentService.search(searchStudentDto)).thenReturn(new PageImpl<>(List.of(studentResponseDto)));
+        StudentResponse studentResponse = getResponseDto();
+        when(studentService.search(searchStudentDto)).thenReturn(new PageImpl<>(List.of(studentResponse)));
 
-        ResponseEntity<Page<StudentResponseDto>> response = studentController.search(searchStudentDto);
+        ResponseEntity<Page<StudentResponse>> response = studentController.search(searchStudentDto);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
         assertNotNull(response.getBody());
@@ -47,31 +48,16 @@ class StudentControllerTest {
     }
 
     @Test
-    @DisplayName("deveCriarRecurso")
-    void deveCriarRecurso() {
-        CreateStudentDto createStudentDto = new CreateStudentDto();
-        createStudentDto.setName(studentName);
-        StudentResponseDto studentResponseDto = getResponseDto();
-        when(studentService.create(createStudentDto)).thenReturn(studentResponseDto);
-
-        ResponseEntity<StudentResponseDto> response = studentController.create(createStudentDto);
-
-        assertTrue(response.getStatusCode().is2xxSuccessful());
-        assertNotNull(response.getBody());
-        assertEquals(studentName, response.getBody().getName());
-    }
-
-    @Test
     @DisplayName("deveEncontrarPorId")
     void deveEncontrarPorId() {
         final Integer studentId = 1;
-        StudentResponseDto studentResponseDto = StudentResponseDto
+        StudentResponse studentResponse = StudentResponse
                 .builder()
                 .name(studentName)
                 .build();
-        when(studentService.findById(studentId)).thenReturn(studentResponseDto);
+        when(studentService.findById(studentId)).thenReturn(studentResponse);
 
-        ResponseEntity<StudentResponseDto> response = studentController.findById(studentId);
+        ResponseEntity<StudentResponse> response = studentController.findById(studentId);
 
         assertNotNull(response.getBody());
         assertEquals(response.getBody().getName(), studentName);
@@ -84,7 +70,7 @@ class StudentControllerTest {
         final Integer nonValidId = 1;
         when(studentService.findById(nonValidId)).thenReturn(null);
 
-        ResponseEntity<StudentResponseDto> response = studentController.findById(nonValidId);
+        ResponseEntity<StudentResponse> response = studentController.findById(nonValidId);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
         assertFalse(response.hasBody());
@@ -97,11 +83,11 @@ class StudentControllerTest {
         Student student = Student
                 .builder()
                 .id(studentId)
-                .name(studentName)
+                .baseData(User.builder().name(studentName).build())
                 .build();
         when(studentService.delete(studentId)).thenReturn(student);
 
-        ResponseEntity<StudentResponseDto> response = studentController.delete(studentId);
+        ResponseEntity<StudentResponse> response = studentController.delete(studentId);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
         assertFalse(response.hasBody());
@@ -113,13 +99,13 @@ class StudentControllerTest {
         final Integer nonValidId = 1;
         when(studentService.delete(nonValidId)).thenReturn(null);
 
-        ResponseEntity<StudentResponseDto> response = studentController.delete(nonValidId);
+        ResponseEntity<StudentResponse> response = studentController.delete(nonValidId);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
     }
 
-    private StudentResponseDto getResponseDto() {
-        return StudentResponseDto
+    private StudentResponse getResponseDto() {
+        return StudentResponse
                 .builder()
                 .name(studentName)
                 .build();

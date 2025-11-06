@@ -14,15 +14,17 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ClassEntity {
+public class SchoolClass {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
     @Column(nullable = false, unique = true)
     private String name;
-    @OneToMany(mappedBy = "classEntity")
+    @OneToMany(mappedBy = "currentClass")
     private List<Student> students = new ArrayList<>();
+    @ManyToMany(mappedBy = "classes")
+    private List<Teacher> teachers;
     @Column(nullable = false)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

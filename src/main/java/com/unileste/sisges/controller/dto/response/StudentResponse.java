@@ -1,6 +1,5 @@
 package com.unileste.sisges.controller.dto.response;
 
-import com.unileste.sisges.enums.GenderENUM;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,12 +9,12 @@ import java.time.LocalDate;
 @Builder
 @Getter
 @Setter
-public class StudentResponseDto {
+public class StudentResponse {
 
     private String register;
     private String name;
     private String email;
-    private ClassResponseDto classEntity;
+    private ClassResponse classEntity;
     private LocalDate birthDate;
-    private GenderENUM gender;
+    private String gender;
 }

@@ -1,6 +1,6 @@
 package com.unileste.sisges.config;
 
-import com.unileste.sisges.repository.BaseUserRepository;
+import com.unileste.sisges.repository.UserRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -13,15 +13,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 @Configuration
 public class ApplicationConfiguration {
-    private final BaseUserRepository baseUserRepository;
+    private final UserRepository userRepository;
 
-    public ApplicationConfiguration(BaseUserRepository baseUserRepository) {
-        this.baseUserRepository = baseUserRepository;
+    public ApplicationConfiguration(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     @Bean
     UserDetailsService userDetailsService() {
-        return username -> baseUserRepository.findByEmail(username)
+        return username -> userRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
     }
 

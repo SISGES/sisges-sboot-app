@@ -5,13 +5,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
 @Getter
 @Setter
-public class ClassResponseDto {
+public class DetailedClassResponse {
 
-    private Integer id;
     private String name;
+    private List<StudentResponse> students;
     private LocalDateTime createdAt;
 }

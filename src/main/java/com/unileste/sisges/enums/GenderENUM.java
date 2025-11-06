@@ -1,20 +1,18 @@
 package com.unileste.sisges.enums;
 
+import lombok.Getter;
+
+@Getter
 public enum GenderENUM {
 
     MASCULINO("M"),
     FEMININO("F"),
-    NAO_BINARIO("NB"),
     OUTRO("O");
 
     private final String code;
 
     GenderENUM(String code) {
         this.code = code;
-    }
-
-    public String getCode() {
-        return code;
     }
 
     public static GenderENUM fromCode(String code) {
