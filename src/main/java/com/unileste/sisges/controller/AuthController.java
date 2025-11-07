@@ -2,6 +2,7 @@ package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.request.LoginUserDto;
 import com.unileste.sisges.controller.dto.request.RegisterUserRequest;
+import com.unileste.sisges.controller.dto.response.UserResponse;
 import com.unileste.sisges.model.User;
 import com.unileste.sisges.service.AuthService;
 import com.unileste.sisges.service.JwtService;
@@ -37,9 +38,15 @@ public class AuthController {
                 .builder()
                 .token(jwtToken)
                 .expiresIn(jwtService.getExpirationTime())
-                .name(authenticatedUser.getName())
-                .email(authenticatedUser.getEmail())
-                .register(authenticatedUser.getRegister())
+                .userResponse(UserResponse
+                        .builder()
+                        .id(authenticatedUser.getId())
+                        .name(authenticatedUser.getName())
+                        .email(authenticatedUser.getEmail())
+                        .gender(authenticatedUser.getGender())
+                        .birthDate(authenticatedUser.getBirthDate())
+                        .register(authenticatedUser.getRegister())
+                        .build())
                 .role(authenticatedUser.getUserRole().name())
                 .build();
 

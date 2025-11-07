@@ -12,9 +12,10 @@ import java.time.LocalDate;
 @Builder
 public class UserResponse {
 
+    private Integer id;
     private String name;
     private String email;
-    private GenderENUM gender;
+    private String gender;
     private LocalDate birthDate;
     private String register;
 }

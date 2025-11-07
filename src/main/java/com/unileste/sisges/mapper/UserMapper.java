@@ -26,9 +26,10 @@ public class UserMapper {
     public static UserResponse toResponse(User entity) {
         return UserResponse
                 .builder()
+                .id(entity.getId())
                 .name(entity.getName())
                 .email(entity.getEmail())
-                .gender(GenderENUM.fromCode(entity.getGender()))
+                .gender(GenderENUM.fromCode(entity.getGender()).name())
                 .birthDate(entity.getBirthDate())
                 .register(entity.getRegister())
                 .build();
