@@ -2,12 +2,12 @@ package com.unileste.sisges.controller.dto.response;
 
 import lombok.Builder;
 import lombok.Getter;
-import lombok.Setter;
+
+import java.util.List;
 
 @Builder
 @Getter
-@Setter
-public class StudentResponse {
+public class TeacherResponse {
 
-    private SchoolClassResponse classEntity;
+    private List<SchoolClassResponse> classes;
 }

@@ -9,9 +9,10 @@ import java.time.LocalDateTime;
 @Builder
 @Getter
 @Setter
-public class ClassResponse {
+public class SchoolClassResponse {
 
     private Integer id;
     private String name;
+    private int studentCount;
     private LocalDateTime createdAt;
 }

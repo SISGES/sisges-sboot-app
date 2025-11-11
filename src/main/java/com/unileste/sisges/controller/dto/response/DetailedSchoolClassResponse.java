@@ -10,9 +10,10 @@ import java.util.List;
 @Builder
 @Getter
 @Setter
-public class DetailedClassResponse {
+public class DetailedSchoolClassResponse {
 
     private String name;
+    private List<TeacherResponse> teachers;
     private List<StudentResponse> students;
     private LocalDateTime createdAt;
 }

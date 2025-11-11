@@ -10,12 +10,7 @@ public class StudentMapper {
     public static StudentResponse toResponse(Student request) {
         return StudentResponse
                 .builder()
-                .register(request.getBaseData().getRegister())
-                .name(request.getBaseData().getName())
                 .classEntity(request.getCurrentClass() != null ? ClassMapper.toResponse(request.getCurrentClass()) : null)
-                .email(request.getBaseData().getEmail())
-                .birthDate(request.getBaseData().getBirthDate())
-                .gender(request.getBaseData().getGender())
                 .build();
     }
 }

@@ -3,6 +3,7 @@ package com.unileste.sisges.service;
 import com.unileste.sisges.controller.dto.request.LoginUserDto;
 import com.unileste.sisges.controller.dto.request.RegisterUserRequest;
 import com.unileste.sisges.controller.dto.request.StudentRequest;
+import com.unileste.sisges.controller.dto.request.TeacherRequest;
 import com.unileste.sisges.enums.UserRoleENUM;
 import com.unileste.sisges.mapper.UserMapper;
 import com.unileste.sisges.model.User;
@@ -10,8 +11,11 @@ import com.unileste.sisges.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -50,14 +54,26 @@ public class AuthService {
     }
 
     private void createCorrectEntity(User entity) {
-        if (entity.getUserRole() == UserRoleENUM.STUDENT) {
-            studentService.create(StudentRequest
-                    .builder()
-                    .userId(entity.getId())
-                    .register(entity.getRegister())
-                    .build());
-        } else {
-//            teacherService.create(TeacherRequest);
+        if (entity.getUserRole() != UserRoleENUM.ADMIN && entity.getUserRole() != UserRoleENUM.DEV_ADMIN) {
+            if (entity.getUserRole() == UserRoleENUM.STUDENT) {
+                studentService.create(StudentRequest
+                        .builder()
+                        .userId(entity.getId())
+                        .register(entity.getRegister())
+                        .build());
+            } else {
+                teacherService.create(TeacherRequest
+                        .builder()
+                        .userId(entity.getId())
+                        .register(entity.getRegister())
+                        .build());
+            }
         }
+    }
+
+    public UserRoleENUM verifyUserRole() {
+        String authenticatedEmail = SecurityContextHolder.getContext().getAuthentication().getName();
+        Optional<User> optUser = userRepository.findByEmail(authenticatedEmail);
+        return optUser.map(User::getUserRole).orElse(null);
     }
 }

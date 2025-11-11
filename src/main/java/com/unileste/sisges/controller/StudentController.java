@@ -1,6 +1,5 @@
 package com.unileste.sisges.controller;
 
-import com.unileste.sisges.controller.dto.request.StudentRequest;
 import com.unileste.sisges.controller.dto.request.SearchStudentDto;
 import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.model.Student;
@@ -9,8 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.net.URI;
 
 @RestController
 @RequestMapping("/student")

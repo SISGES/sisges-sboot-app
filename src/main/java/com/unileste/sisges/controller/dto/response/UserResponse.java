@@ -1,6 +1,5 @@
 package com.unileste.sisges.controller.dto.response;
 
-import com.unileste.sisges.enums.GenderENUM;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;

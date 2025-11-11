@@ -3,6 +3,7 @@ package com.unileste.sisges.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -19,9 +20,12 @@ public class Teacher {
     private Integer id;
     @ManyToMany
     @JoinTable(
-            name = "class",
-            joinColumns = @JoinColumn(name = "id"),
+            name = "teacher_class",
+            joinColumns = @JoinColumn(name = "teacher_id"),
             inverseJoinColumns = @JoinColumn(name = "class_id")
     )
-    private List<SchoolClass> classes;
+    private List<SchoolClass> classes = new ArrayList<>();
+    @OneToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
+    private User baseData;
 }
