@@ -6,7 +6,8 @@ COPY pom.xml .
 RUN mvn dependency:go-offline -B
 
 COPY src ./src
-RUN mvn clean package -DskipTests -B
+RUN mvn clean package -DskipTests -B && \
+    ls -la /app/target/*.jar
 
 FROM eclipse-temurin:21-jre-alpine
 
@@ -16,6 +17,7 @@ RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
 COPY --from=builder /app/target/*.jar app.jar
+RUN ls -la /app/app.jar
 
 EXPOSE 8080
 
