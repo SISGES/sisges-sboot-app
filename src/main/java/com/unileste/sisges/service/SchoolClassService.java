@@ -5,10 +5,13 @@ import com.unileste.sisges.controller.dto.request.SearchClassRequest;
 import com.unileste.sisges.controller.dto.request.UpdateClassRequestDto;
 import com.unileste.sisges.controller.dto.response.SchoolClassResponse;
 import com.unileste.sisges.controller.dto.response.DetailedSchoolClassResponse;
+import com.unileste.sisges.controller.dto.response.SchoolClassSimpleResponse;
 import com.unileste.sisges.mapper.ClassMapper;
 import com.unileste.sisges.model.SchoolClass;
+import com.unileste.sisges.model.Student;
 import com.unileste.sisges.model.Teacher;
 import com.unileste.sisges.repository.ClassRepository;
+import com.unileste.sisges.repository.StudentRepository;
 import com.unileste.sisges.repository.TeacherRepository;
 import com.unileste.sisges.specification.ClassSpecification;
 import jakarta.transaction.Transactional;
@@ -29,6 +32,7 @@ public class SchoolClassService {
 
     private final ClassRepository schoolClassRepository;
     private final TeacherRepository teacherRepository;
+    private final StudentRepository studentRepository;
 
     public Page<SchoolClassResponse> search(@Valid SearchClassRequest search) {
         Specification<SchoolClass> spec = ClassSpecification.filterByDto(search);
@@ -38,7 +42,7 @@ public class SchoolClassService {
                 .map(ClassMapper::toResponse);
     }
 
-    public DetailedSchoolClassResponse findById(Integer id) {
+    public DetailedSchoolClassResponse superFindById(Integer id) {
         Optional<SchoolClass> optClass = schoolClassRepository.findById(id);
         return optClass.map(ClassMapper::toDetailedResponse).orElse(null);
     }
@@ -70,7 +74,7 @@ public class SchoolClassService {
         Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
         SchoolClass schoolClass = schoolClassRepository.findById(classId).orElse(null);
 
-        if(teacher == null || schoolClass == null) return null;
+        if (teacher == null || schoolClass == null) return null;
 
         teacher.addClass(schoolClass);
         schoolClass.addTeacher(teacher);
@@ -85,11 +89,45 @@ public class SchoolClassService {
         Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
         SchoolClass schoolClass = schoolClassRepository.findById(classId).orElse(null);
 
-        if(teacher == null || schoolClass == null) return null;
+        if (teacher == null || schoolClass == null) return null;
 
         teacher.removeClass(schoolClass);
         teacherRepository.save(teacher);
 
         return ClassMapper.toResponse(schoolClass);
+    }
+
+    @Transactional
+    public SchoolClassResponse bindStudent(Integer classId, Integer studentId) {
+        Student student = studentRepository.findById(studentId).orElse(null);
+        SchoolClass schoolClass = schoolClassRepository.findById(classId).orElse(null);
+
+        if (student == null || schoolClass == null) return null;
+
+        student.setCurrentClass(schoolClass);
+        schoolClass.addStudent(student);
+
+        studentRepository.save(student);
+
+        return ClassMapper.toResponse(schoolClass);
+    }
+
+    @Transactional
+    public SchoolClassResponse unbindStudent(Integer classId, Integer studentId) {
+        Student student = studentRepository.findById(studentId).orElse(null);
+        SchoolClass schoolClass = schoolClassRepository.findById(classId).orElse(null);
+        if (student == null || schoolClass == null) return null;
+
+        student.setCurrentClass(null);
+        studentRepository.save(student);
+
+        return ClassMapper.toResponse(schoolClass);
+    }
+
+    public SchoolClassSimpleResponse findById(Integer id) {
+        SchoolClass schoolClass = schoolClassRepository.findById(id).orElse(null);
+        if (schoolClass == null) return null;
+
+        return ClassMapper.toSimpleResponse(schoolClass);
     }
 }

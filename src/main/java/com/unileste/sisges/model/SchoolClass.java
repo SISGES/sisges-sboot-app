@@ -38,4 +38,8 @@ public class SchoolClass {
         this.teachers.remove(teacher);
         teacher.getClasses().remove(this);
     }
+
+    public void addStudent(Student student) {
+        this.students.add(student);
+    }
 }

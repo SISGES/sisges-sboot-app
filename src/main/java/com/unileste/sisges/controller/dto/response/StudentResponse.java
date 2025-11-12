@@ -9,7 +9,10 @@ import lombok.Setter;
 @Setter
 public class StudentResponse {
 
+    private Integer id;
+    private Integer userId;
+    private Integer currentClass;
+    private String register;
     private String name;
     private String email;
-    private SchoolClassResponse classEntity;
 }

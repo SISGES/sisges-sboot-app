@@ -4,6 +4,7 @@ import com.unileste.sisges.controller.dto.request.SearchUserRequest;
 import com.unileste.sisges.controller.dto.request.UpdateUserRequest;
 import com.unileste.sisges.controller.dto.response.UserResponse;
 import com.unileste.sisges.enums.UserRoleENUM;
+import com.unileste.sisges.exception.InvalidRoleException;
 import com.unileste.sisges.service.AuthService;
 import com.unileste.sisges.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +26,8 @@ public class UserController {
     public ResponseEntity<Page<UserResponse>> search(@RequestBody(required = false) SearchUserRequest search) {
         UserRoleENUM userRole = authService.verifyUserRole();
         if (userRole == UserRoleENUM.STUDENT)
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+            throw new InvalidRoleException("Usuário sem permissão");
+
         return ResponseEntity.ok(userService.search(search, userRole));
     }
 

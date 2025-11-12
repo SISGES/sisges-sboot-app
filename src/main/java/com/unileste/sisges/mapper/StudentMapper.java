@@ -10,9 +10,11 @@ public class StudentMapper {
     public static StudentResponse toResponse(Student entity) {
         return StudentResponse
                 .builder()
+                .id(entity.getId())
+                .userId(entity.getBaseData().getId())
+                .currentClass(entity.getCurrentClass() != null ? entity.getCurrentClass().getId() : null)
                 .name(entity.getBaseData().getName())
                 .email(entity.getBaseData().getEmail())
-                .classEntity(entity.getCurrentClass() != null ? ClassMapper.toResponse(entity.getCurrentClass()) : null)
                 .build();
     }
 }

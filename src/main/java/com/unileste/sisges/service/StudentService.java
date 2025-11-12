@@ -27,7 +27,6 @@ public class StudentService {
     private final StudentRepository studentRepository;
     private final ClassRepository classRepository;
     private final UserService userService;
-    private final RegisterService registerService;
 
     public Page<StudentResponse> search(SearchStudentRequest dto) {
         Specification<Student> spec = StudentSpecification.filter(dto);
@@ -73,5 +72,15 @@ public class StudentService {
             student.getBaseData().setDeletedAt(LocalDateTime.now());
             return studentRepository.save(student);
         }
+    }
+
+    public StudentResponse findByUserId(Integer id) {
+        Optional<Student> optStudent = studentRepository.findByBaseDataId(id);
+        if (optStudent.isEmpty() || optStudent.get().getBaseData().getDeletedAt() != null) {
+            return null;
+        }
+
+        Student student = optStudent.get();
+        return StudentMapper.toResponse(student);
     }
 }
