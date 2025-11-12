@@ -1,6 +1,6 @@
 package com.unileste.sisges.controller;
 
-import com.unileste.sisges.controller.dto.request.SearchStudentDto;
+import com.unileste.sisges.controller.dto.request.SearchStudentRequest;
 import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.model.Student;
 import com.unileste.sisges.service.StudentService;
@@ -17,7 +17,7 @@ public class StudentController {
     private final StudentService studentService;
 
     @PostMapping("/search")
-    public ResponseEntity<Page<StudentResponse>> search(@RequestBody(required = false) SearchStudentDto request) {
+    public ResponseEntity<Page<StudentResponse>> search(@RequestBody(required = false) SearchStudentRequest request) {
         return ResponseEntity.ok(studentService.search(request));
     }
 

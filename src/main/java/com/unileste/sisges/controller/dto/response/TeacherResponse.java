@@ -9,5 +9,9 @@ import java.util.List;
 @Getter
 public class TeacherResponse {
 
+    private Integer id;
+    private Integer userId;
+    private String name;
+    private String email;
     private List<SchoolClassResponse> classes;
 }

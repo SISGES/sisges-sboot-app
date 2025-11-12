@@ -17,4 +17,5 @@ public class UserResponse {
     private String gender;
     private LocalDate birthDate;
     private String register;
+    private String userRole;
 }

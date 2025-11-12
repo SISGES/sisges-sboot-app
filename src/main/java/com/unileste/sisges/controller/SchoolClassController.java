@@ -1,7 +1,7 @@
 package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.request.CreateClassRequestDto;
-import com.unileste.sisges.controller.dto.request.SearchClassDto;
+import com.unileste.sisges.controller.dto.request.SearchClassRequest;
 import com.unileste.sisges.controller.dto.request.UpdateClassRequestDto;
 import com.unileste.sisges.controller.dto.response.SchoolClassResponse;
 import com.unileste.sisges.controller.dto.response.DetailedSchoolClassResponse;
@@ -25,10 +25,28 @@ public class SchoolClassController {
     private final SchoolClassService schoolClassService;
     private final AuthService authService;
 
+    @PostMapping("/{classId}/bind/teacher/{teacherId}")
+    public ResponseEntity<SchoolClassResponse> bindTeacher(@PathVariable Integer classId, @PathVariable Integer teacherId) throws InvalidPayloadException {
+        SchoolClassResponse response = schoolClassService.bindTeacher(classId, teacherId);
+        if (response == null) {
+            throw new InvalidPayloadException("Usuário ou professor inexistente");
+        }
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{classId}/unbind/teacher/{teacherId}")
+    public ResponseEntity<SchoolClassResponse> unbindTeacher(@PathVariable Integer classId, @PathVariable Integer teacherId) throws InvalidPayloadException {
+        SchoolClassResponse response = schoolClassService.unbindTeacher(classId, teacherId);
+        if (response == null) {
+            throw new InvalidPayloadException("Usuário ou professor inexistente");
+        }
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/create")
     public ResponseEntity<SchoolClassResponse> create(@RequestBody @Valid CreateClassRequestDto request) throws InvalidPayloadException {
         UserRoleENUM userRole = authService.verifyUserRole();
-        if (userRole != UserRoleENUM.ADMIN && userRole != UserRoleENUM.DEV_ADMIN)
+        if (userRole == UserRoleENUM.STUDENT || userRole == UserRoleENUM.TEACHER)
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
 
         SchoolClassResponse response = schoolClassService.create(request);
@@ -39,25 +57,37 @@ public class SchoolClassController {
     }
 
     @PostMapping("/search")
-    public ResponseEntity<Page<SchoolClassResponse>> search(@RequestBody @Valid SearchClassDto search) {
+    public ResponseEntity<Page<SchoolClassResponse>> search(@RequestBody(required = false) SearchClassRequest search) {
+        UserRoleENUM userRole = authService.verifyUserRole();
+        if (userRole == UserRoleENUM.STUDENT || userRole == UserRoleENUM.TEACHER)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+
         return ResponseEntity.ok(schoolClassService.search(search));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<DetailedSchoolClassResponse> findById(@PathVariable Integer id) {
+        UserRoleENUM userRole = authService.verifyUserRole();
+        if (userRole == UserRoleENUM.STUDENT || userRole == UserRoleENUM.TEACHER)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         DetailedSchoolClassResponse response = schoolClassService.findById(id);
         if (response == null) {
             return ResponseEntity.noContent().build();
         }
+
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/update/{id}")
     public ResponseEntity<SchoolClassResponse> update(@RequestBody @Valid UpdateClassRequestDto request, @PathVariable Integer id) throws InvalidPayloadException {
+        UserRoleENUM userRole = authService.verifyUserRole();
+        if (userRole == UserRoleENUM.STUDENT || userRole == UserRoleENUM.TEACHER)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         SchoolClassResponse response = schoolClassService.update(request, id);
         if (response == null) {
             throw new InvalidPayloadException("Ocorreu um erro. Verifique se não está inserindo um nome já existente.");
         }
+
         return ResponseEntity.ok(response);
     }
 }

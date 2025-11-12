@@ -7,10 +7,12 @@ import lombok.experimental.UtilityClass;
 @UtilityClass
 public class StudentMapper {
 
-    public static StudentResponse toResponse(Student request) {
+    public static StudentResponse toResponse(Student entity) {
         return StudentResponse
                 .builder()
-                .classEntity(request.getCurrentClass() != null ? ClassMapper.toResponse(request.getCurrentClass()) : null)
+                .name(entity.getBaseData().getName())
+                .email(entity.getBaseData().getEmail())
+                .classEntity(entity.getCurrentClass() != null ? ClassMapper.toResponse(entity.getCurrentClass()) : null)
                 .build();
     }
 }

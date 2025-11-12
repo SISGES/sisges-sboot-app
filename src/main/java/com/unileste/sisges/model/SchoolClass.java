@@ -29,4 +29,13 @@ public class SchoolClass {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;
+
+    public void addTeacher(Teacher teacher) {
+        this.teachers.add(teacher);
+    }
+
+    public void removeTeacher(Teacher teacher) {
+        this.teachers.remove(teacher);
+        teacher.getClasses().remove(this);
+    }
 }

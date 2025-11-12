@@ -1,6 +1,6 @@
 package com.unileste.sisges.specification;
 
-import com.unileste.sisges.controller.dto.request.SearchStudentDto;
+import com.unileste.sisges.controller.dto.request.SearchStudentRequest;
 import com.unileste.sisges.model.Student;
 import jakarta.persistence.criteria.Predicate;
 import lombok.experimental.UtilityClass;
@@ -12,7 +12,7 @@ import java.util.List;
 @UtilityClass
 public class StudentSpecification {
 
-    public static Specification<Student> filterByDto(SearchStudentDto dto) {
+    public static Specification<Student> filter(SearchStudentRequest dto) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.isNull(root.get("deletedAt")));
@@ -32,8 +32,8 @@ public class StudentSpecification {
                 predicates.add(cb.equal(root.get("name"), dto.getName()));
             }
 
-            if (dto.getResponsible1Name() != null) {
-                predicates.add(cb.equal(root.get("responsible1Name"), dto.getResponsible1Name()));
+            if (dto.getResponsibleName() != null) {
+                predicates.add(cb.equal(root.get("responsible1Name"), dto.getResponsibleName()));
             }
 
             if (dto.getEmail() != null) {

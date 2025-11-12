@@ -1,7 +1,6 @@
 package com.unileste.sisges.controller;
 
-import com.unileste.sisges.controller.dto.request.StudentRequest;
-import com.unileste.sisges.controller.dto.request.SearchStudentDto;
+import com.unileste.sisges.controller.dto.request.SearchStudentRequest;
 import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.model.Student;
 import com.unileste.sisges.model.User;
@@ -36,11 +35,11 @@ class StudentControllerTest {
     @Test
     @DisplayName("deveRetornarListaPaginada")
     void deveRetornarListaPaginada() {
-        SearchStudentDto searchStudentDto = new SearchStudentDto();
+        SearchStudentRequest searchStudentRequest = new SearchStudentRequest();
         StudentResponse studentResponse = getResponseDto();
-        when(studentService.search(searchStudentDto)).thenReturn(new PageImpl<>(List.of(studentResponse)));
+        when(studentService.search(searchStudentRequest)).thenReturn(new PageImpl<>(List.of(studentResponse)));
 
-        ResponseEntity<Page<StudentResponse>> response = studentController.search(searchStudentDto);
+        ResponseEntity<Page<StudentResponse>> response = studentController.search(searchStudentRequest);
 
         assertTrue(response.getStatusCode().is2xxSuccessful());
         assertNotNull(response.getBody());

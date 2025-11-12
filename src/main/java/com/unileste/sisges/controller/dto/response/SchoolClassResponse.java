@@ -13,6 +13,7 @@ public class SchoolClassResponse {
 
     private Integer id;
     private String name;
+    private int teacherCount;
     private int studentCount;
     private LocalDateTime createdAt;
 }

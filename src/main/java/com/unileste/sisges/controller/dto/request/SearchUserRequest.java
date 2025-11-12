@@ -3,19 +3,17 @@ package com.unileste.sisges.controller.dto.request;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 @Getter
 @Setter
-public class SearchStudentDto {
-    private LocalDateTime fromDate;
-    private LocalDateTime toDate;
-
-    private String register;
+public class SearchUserRequest {
     private String name;
-    private String responsible1Name;
     private String email;
-
+    private String register;
+    private LocalDate initialBirthDate;
+    private LocalDate finalBirthDate;
+    private String gender;
     private Integer page = 0;
     private Integer size = 20;
 }

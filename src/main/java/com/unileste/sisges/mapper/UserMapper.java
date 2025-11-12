@@ -32,6 +32,7 @@ public class UserMapper {
                 .gender(GenderENUM.fromCode(entity.getGender()).name())
                 .birthDate(entity.getBirthDate())
                 .register(entity.getRegister())
+                .userRole(entity.getUserRole().name())
                 .build();
     }
 }

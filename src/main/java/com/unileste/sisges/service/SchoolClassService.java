@@ -1,14 +1,17 @@
 package com.unileste.sisges.service;
 
 import com.unileste.sisges.controller.dto.request.CreateClassRequestDto;
-import com.unileste.sisges.controller.dto.request.SearchClassDto;
+import com.unileste.sisges.controller.dto.request.SearchClassRequest;
 import com.unileste.sisges.controller.dto.request.UpdateClassRequestDto;
 import com.unileste.sisges.controller.dto.response.SchoolClassResponse;
 import com.unileste.sisges.controller.dto.response.DetailedSchoolClassResponse;
 import com.unileste.sisges.mapper.ClassMapper;
 import com.unileste.sisges.model.SchoolClass;
+import com.unileste.sisges.model.Teacher;
 import com.unileste.sisges.repository.ClassRepository;
+import com.unileste.sisges.repository.TeacherRepository;
 import com.unileste.sisges.specification.ClassSpecification;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -24,33 +27,34 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class SchoolClassService {
 
-    private final ClassRepository classRepository;
+    private final ClassRepository schoolClassRepository;
+    private final TeacherRepository teacherRepository;
 
-    public Page<SchoolClassResponse> search(@Valid SearchClassDto search) {
+    public Page<SchoolClassResponse> search(@Valid SearchClassRequest search) {
         Specification<SchoolClass> spec = ClassSpecification.filterByDto(search);
         Pageable pageable = PageRequest.of(search == null ? 0 : search.getPage(), search == null ? 20 : search.getSize());
 
-        return classRepository.findAll(spec, pageable)
+        return schoolClassRepository.findAll(spec, pageable)
                 .map(ClassMapper::toResponse);
     }
 
     public DetailedSchoolClassResponse findById(Integer id) {
-        Optional<SchoolClass> optClass = classRepository.findById(id);
+        Optional<SchoolClass> optClass = schoolClassRepository.findById(id);
         return optClass.map(ClassMapper::toDetailedResponse).orElse(null);
     }
 
     public SchoolClassResponse create(CreateClassRequestDto request) {
-        if (classRepository.existsByName(request.getName())) {
+        if (schoolClassRepository.existsByName(request.getName())) {
             return null;
         }
 
-        return ClassMapper.toResponse(classRepository.save(ClassMapper.toEntity(request)));
+        return ClassMapper.toResponse(schoolClassRepository.save(ClassMapper.toEntity(request)));
     }
 
     public SchoolClassResponse update(@Valid UpdateClassRequestDto request, Integer id) {
-        Optional<SchoolClass> optClass = classRepository.findById(id);
+        Optional<SchoolClass> optClass = schoolClassRepository.findById(id);
         if (optClass.isEmpty() || (!optClass.get().getName().equalsIgnoreCase(request.getName())
-                && classRepository.existsByName(request.getName()))) {
+                && schoolClassRepository.existsByName(request.getName()))) {
             return null;
         }
 
@@ -58,6 +62,34 @@ public class SchoolClassService {
         aSchoolClass.setName(request.getName());
         aSchoolClass.setUpdatedAt(LocalDateTime.now());
 
-        return ClassMapper.toResponse(classRepository.save(aSchoolClass));
+        return ClassMapper.toResponse(schoolClassRepository.save(aSchoolClass));
+    }
+
+    @Transactional
+    public SchoolClassResponse bindTeacher(Integer classId, Integer teacherId) {
+        Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
+        SchoolClass schoolClass = schoolClassRepository.findById(classId).orElse(null);
+
+        if(teacher == null || schoolClass == null) return null;
+
+        teacher.addClass(schoolClass);
+        schoolClass.addTeacher(teacher);
+
+        teacherRepository.save(teacher);
+
+        return ClassMapper.toResponse(schoolClass);
+    }
+
+    @Transactional
+    public SchoolClassResponse unbindTeacher(Integer classId, Integer teacherId) {
+        Teacher teacher = teacherRepository.findById(teacherId).orElse(null);
+        SchoolClass schoolClass = schoolClassRepository.findById(classId).orElse(null);
+
+        if(teacher == null || schoolClass == null) return null;
+
+        teacher.removeClass(schoolClass);
+        teacherRepository.save(teacher);
+
+        return ClassMapper.toResponse(schoolClass);
     }
 }

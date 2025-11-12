@@ -1,7 +1,7 @@
 package com.unileste.sisges.service;
 
 import com.unileste.sisges.controller.dto.request.StudentRequest;
-import com.unileste.sisges.controller.dto.request.SearchStudentDto;
+import com.unileste.sisges.controller.dto.request.SearchStudentRequest;
 import com.unileste.sisges.controller.dto.response.StudentResponse;
 import com.unileste.sisges.mapper.StudentMapper;
 import com.unileste.sisges.model.SchoolClass;
@@ -29,8 +29,8 @@ public class StudentService {
     private final UserService userService;
     private final RegisterService registerService;
 
-    public Page<StudentResponse> search(SearchStudentDto dto) {
-        Specification<Student> spec = StudentSpecification.filterByDto(dto);
+    public Page<StudentResponse> search(SearchStudentRequest dto) {
+        Specification<Student> spec = StudentSpecification.filter(dto);
         Pageable pageable = PageRequest.of(dto == null ? 0 : dto.getPage(), dto == null ? 20 : dto.getSize());
 
         return studentRepository.findAll(spec, pageable)

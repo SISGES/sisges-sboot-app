@@ -9,5 +9,7 @@ import lombok.Setter;
 @Setter
 public class StudentResponse {
 
+    private String name;
+    private String email;
     private SchoolClassResponse classEntity;
 }

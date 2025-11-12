@@ -28,4 +28,13 @@ public class Teacher {
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false)
     private User baseData;
+
+    public void addClass(SchoolClass schoolClass) {
+        this.classes.add(schoolClass);
+    }
+
+    public void removeClass(SchoolClass schoolClass) {
+        this.classes.remove(schoolClass);
+        schoolClass.getTeachers().remove(this);
+    }
 }
