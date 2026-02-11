@@ -11,35 +11,65 @@ import java.util.List;
 @Table(name = "school_class", schema = "sisges")
 @Getter
 @Setter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SchoolClass {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
-    @Column(nullable = false, unique = true)
+
+    @Column(nullable = false, length = 100)
     private String name;
-    @OneToMany(mappedBy = "currentClass")
-    private List<Student> students = new ArrayList<>();
-    @ManyToMany(mappedBy = "classes")
-    private List<Teacher> teachers = new ArrayList<>();
-    @Column(nullable = false)
+
+    @Column(name = "academic_year", nullable = false, length = 9)
+    private String academicYear;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    public void addTeacher(Teacher teacher) {
-        this.teachers.add(teacher);
+    @OneToMany(mappedBy = "currentClass")
+    @Builder.Default
+    private List<Student> students = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "teacher_class",
+        schema = "sisges",
+        joinColumns = @JoinColumn(name = "class_id"),
+        inverseJoinColumns = @JoinColumn(name = "teacher_id")
+    )
+    @Builder.Default
+    private List<Teacher> teachers = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "class_discipline",
+        schema = "sisges",
+        joinColumns = @JoinColumn(name = "class_id"),
+        inverseJoinColumns = @JoinColumn(name = "discipline_id")
+    )
+    @Builder.Default
+    private List<Discipline> disciplines = new ArrayList<>();
+
+    @OneToMany(mappedBy = "schoolClass")
+    @Builder.Default
+    private List<ClassMeeting> meetings = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
     }
 
-    public void removeTeacher(Teacher teacher) {
-        this.teachers.remove(teacher);
-        teacher.getClasses().remove(this);
-    }
-
-    public void addStudent(Student student) {
-        this.students.add(student);
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }

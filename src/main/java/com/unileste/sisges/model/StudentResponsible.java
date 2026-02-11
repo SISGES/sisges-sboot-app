@@ -3,29 +3,58 @@ package com.unileste.sisges.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name = "student_responsible", schema = "sisges")
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class StudentResponsible {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
+
     @Column(nullable = false)
     private String name;
-    @Column(nullable = false)
+
+    @Column(nullable = false, length = 30)
     private String phone;
-    @Column(nullable = false)
+
+    @Column(name = "alternative_phone", nullable = false, length = 30)
     private String alternativePhone;
+
     @Column(nullable = false)
     private String email;
-    @Column(nullable = false)
+
+    @Column(name = "alternative_email", nullable = false)
     private String alternativeEmail;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
     @OneToMany(mappedBy = "responsible")
-    private List<Student> students;
+    @Builder.Default
+    private List<Student> students = new ArrayList<>();
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
