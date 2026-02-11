@@ -20,7 +20,6 @@ public class UserSpecification {
         return (Root<User> root, CriteriaQuery<?> query, CriteriaBuilder cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // Sempre filtrar registros não deletados (soft delete)
             predicates.add(cb.isNull(root.get("deletedAt")));
 
             if (request != null) {

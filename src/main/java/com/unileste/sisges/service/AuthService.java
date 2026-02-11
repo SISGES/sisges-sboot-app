@@ -102,7 +102,6 @@ public class AuthService {
                 studentRepository.save(student);
             }
             case "ADMIN" -> {
-                // Apenas User, sem perfil adicional
             }
             default -> throw new BusinessRuleException("Papel inválido: " + request.getRole());
         }
