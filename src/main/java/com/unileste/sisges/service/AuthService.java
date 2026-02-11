@@ -4,6 +4,8 @@ import com.unileste.sisges.controller.dto.auth.LoginRequest;
 import com.unileste.sisges.controller.dto.auth.LoginResponse;
 import com.unileste.sisges.controller.dto.auth.RegisterUserRequest;
 import com.unileste.sisges.controller.dto.auth.UserResponse;
+import com.unileste.sisges.exception.BusinessRuleException;
+import com.unileste.sisges.exception.ResourceNotFoundException;
 import com.unileste.sisges.model.SchoolClass;
 import com.unileste.sisges.model.Student;
 import com.unileste.sisges.model.StudentResponsible;
@@ -61,10 +63,10 @@ public class AuthService {
     @Transactional
     public UserResponse register(RegisterUserRequest request) {
         if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
-            throw new IllegalArgumentException("E-mail já cadastrado: " + request.getEmail());
+            throw new BusinessRuleException("E-mail já cadastrado: " + request.getEmail());
         }
         if (userRepository.existsByRegisterAndDeletedAtIsNull(request.getRegister())) {
-            throw new IllegalArgumentException("Registro/matrícula já cadastrado: " + request.getRegister());
+            throw new BusinessRuleException("Registro/matrícula já cadastrado: " + request.getRegister());
         }
 
         User user = User.builder()
@@ -88,7 +90,7 @@ public class AuthService {
             }
             case "STUDENT" -> {
                 if (request.getResponsibleId() == null && request.getResponsibleData() == null) {
-                    throw new IllegalArgumentException("Aluno deve ter um responsável legal (informe responsibleId ou responsibleData).");
+                    throw new BusinessRuleException("Aluno deve ter um responsável legal (informe responsibleId ou responsibleData).");
                 }
                 StudentResponsible responsible = resolveResponsible(request);
                 SchoolClass schoolClass = resolveSchoolClass(request);
@@ -102,7 +104,7 @@ public class AuthService {
             case "ADMIN" -> {
                 // Apenas User, sem perfil adicional
             }
-            default -> throw new IllegalArgumentException("Papel inválido: " + request.getRole());
+            default -> throw new BusinessRuleException("Papel inválido: " + request.getRole());
         }
 
         return toUserResponse(user);
@@ -122,7 +124,7 @@ public class AuthService {
         }
         if (request.getResponsibleId() != null) {
             return studentResponsibleRepository.findById(request.getResponsibleId())
-                    .orElseThrow(() -> new IllegalArgumentException("Responsável não encontrado: " + request.getResponsibleId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Responsável", request.getResponsibleId()));
         }
         return null;
     }
@@ -130,7 +132,7 @@ public class AuthService {
     private SchoolClass resolveSchoolClass(RegisterUserRequest request) {
         if (request.getClassId() != null) {
             return schoolClassRepository.findById(request.getClassId())
-                    .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada: " + request.getClassId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Turma", request.getClassId()));
         }
         return null;
     }

@@ -1,13 +1,12 @@
 package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.auth.UserResponse;
+import com.unileste.sisges.controller.dto.user.UserSearchRequest;
 import com.unileste.sisges.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -18,10 +17,18 @@ public class UserController {
 
     private final UserService userService;
 
-    @GetMapping
+    @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> listUsers() {
-        List<UserResponse> users = userService.listAllUsers();
+    public ResponseEntity<List<UserResponse>> searchUsers(
+            @RequestBody(required = false) UserSearchRequest request) {
+        List<UserResponse> users = userService.searchUsers(request);
         return ResponseEntity.ok(users);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> findById(@PathVariable Integer id) {
+        UserResponse user = userService.findById(id);
+        return ResponseEntity.ok(user);
     }
 }

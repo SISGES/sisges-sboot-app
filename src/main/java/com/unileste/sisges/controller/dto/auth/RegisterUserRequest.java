@@ -22,6 +22,7 @@ public class RegisterUserRequest {
     @NotBlank(message = "E-mail é obrigatório")
     @Email(message = "E-mail inválido")
     @Size(max = 255)
+    @Pattern(regexp = "^.+@sisges\\.com$", message = "O e-mail deve pertencer ao domínio @sisges.com")
     private String email;
 
     @NotBlank(message = "Registro/matrícula é obrigatório")
@@ -78,10 +79,12 @@ public class RegisterUserRequest {
         @NotBlank(message = "E-mail do responsável é obrigatório")
         @Email(message = "E-mail inválido")
         @Size(max = 255)
+        @Pattern(regexp = "^.+@sisges\\.com$", message = "O e-mail deve pertencer ao domínio @sisges.com")
         private String email;
 
         @Size(max = 255)
         @Email(message = "E-mail alternativo inválido")
+        @Pattern(regexp = "^$|^.+@sisges\\.com$", message = "O e-mail alternativo deve pertencer ao domínio @sisges.com")
         private String alternativeEmail;
     }
 }
