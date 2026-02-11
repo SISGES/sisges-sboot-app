@@ -26,7 +26,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_INVALID_CREDENTIALS);
-        return ResponseEntity.status(response.getStatus()).body(response);
+        return ResponseEntity.ok(response);
     }
 
     @ExceptionHandler(AuthenticationException.class)
