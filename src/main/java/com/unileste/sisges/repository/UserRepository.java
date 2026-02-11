@@ -23,6 +23,6 @@ public interface UserRepository extends JpaRepository<User, Integer>, JpaSpecifi
 
     Optional<User> findByIdAndDeletedAtIsNull(Integer id);
 
-    @Query("SELECT u.register FROM User u WHERE u.register LIKE :prefix% ORDER BY u.register DESC LIMIT 1")
+    @Query(value = "SELECT u.register FROM sisges.users u WHERE u.register ~ CONCAT('^', :prefix, '[0-9]+$') ORDER BY u.register DESC LIMIT 1", nativeQuery = true)
     Optional<String> findLastRegisterByPrefix(@Param("prefix") String prefix);
 }

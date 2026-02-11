@@ -3,6 +3,7 @@ package com.unileste.sisges.service;
 import com.unileste.sisges.controller.dto.auth.LoginRequest;
 import com.unileste.sisges.controller.dto.auth.LoginResponse;
 import com.unileste.sisges.controller.dto.auth.RegisterUserRequest;
+import com.unileste.sisges.controller.dto.auth.ResponsibleData;
 import com.unileste.sisges.controller.dto.auth.UserResponse;
 import com.unileste.sisges.exception.BusinessRuleException;
 import com.unileste.sisges.exception.ResourceNotFoundException;
@@ -18,7 +19,6 @@ import com.unileste.sisges.repository.TeacherRepository;
 import com.unileste.sisges.repository.UserRepository;
 import com.unileste.sisges.security.JwtService;
 import com.unileste.sisges.security.UserPrincipal;
-import com.unileste.sisges.service.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -112,7 +112,7 @@ public class AuthService {
 
     private StudentResponsible resolveResponsible(RegisterUserRequest request) {
         if (request.getResponsibleData() != null) {
-            RegisterUserRequest.ResponsibleData rd = request.getResponsibleData();
+            ResponsibleData rd = request.getResponsibleData();
             StudentResponsible sr = StudentResponsible.builder()
                     .name(rd.getName())
                     .phone(rd.getPhone())
