@@ -26,13 +26,13 @@ public class StudentResponsible {
     @Column(nullable = false, length = 30)
     private String phone;
 
-    @Column(name = "alternative_phone", nullable = false, length = 30)
+    @Column(name = "alternative_phone", length = 30)
     private String alternativePhone;
 
     @Column(nullable = false)
     private String email;
 
-    @Column(name = "alternative_email", nullable = false)
+    @Column(name = "alternative_email")
     private String alternativeEmail;
 
     @Column(name = "created_at", nullable = false, updatable = false)
