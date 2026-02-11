@@ -44,7 +44,7 @@ public class StudentResponsible {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @OneToMany(mappedBy = "responsible")
+    @ManyToMany(mappedBy = "responsibles")
     @Builder.Default
     private List<Student> students = new ArrayList<>();
 

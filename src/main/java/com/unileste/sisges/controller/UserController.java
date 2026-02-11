@@ -2,6 +2,7 @@ package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.auth.UserResponse;
 import com.unileste.sisges.controller.dto.user.UserSearchRequest;
+import com.unileste.sisges.controller.dto.user.UserSearchResponse;
 import com.unileste.sisges.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +20,9 @@ public class UserController {
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UserResponse>> searchUsers(
+    public ResponseEntity<List<UserSearchResponse>> searchUsers(
             @RequestBody(required = false) UserSearchRequest request) {
-        List<UserResponse> users = userService.searchUsers(request);
+        List<UserSearchResponse> users = userService.searchUsers(request);
         return ResponseEntity.ok(users);
     }
 

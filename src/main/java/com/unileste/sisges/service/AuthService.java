@@ -18,6 +18,7 @@ import com.unileste.sisges.repository.TeacherRepository;
 import com.unileste.sisges.repository.UserRepository;
 import com.unileste.sisges.security.JwtService;
 import com.unileste.sisges.security.UserPrincipal;
+import com.unileste.sisges.service.RegistrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -38,6 +39,7 @@ public class AuthService {
     private final StudentResponsibleRepository studentResponsibleRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RegistrationService registrationService;
 
     public LoginResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
@@ -62,17 +64,13 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(RegisterUserRequest request) {
-        if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
-            throw new BusinessRuleException("E-mail já cadastrado: " + request.getEmail());
-        }
-        if (userRepository.existsByRegisterAndDeletedAtIsNull(request.getRegister())) {
-            throw new BusinessRuleException("Registro/matrícula já cadastrado: " + request.getRegister());
-        }
+        String register = registrationService.generateRegister(request.getRole());
+        String email = registrationService.generateEmail(register);
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
-                .register(request.getRegister())
+                .email(email)
+                .register(register)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .birthDate(request.getBirthDate())
                 .gender(request.getGender())
@@ -96,10 +94,13 @@ public class AuthService {
                 SchoolClass schoolClass = resolveSchoolClass(request);
                 Student student = Student.builder()
                         .baseData(user)
-                        .responsible(responsible)
                         .currentClass(schoolClass)
                         .build();
-                studentRepository.save(student);
+                student = studentRepository.save(student);
+                if (responsible != null) {
+                    student.getResponsibles().add(responsible);
+                    studentRepository.save(student);
+                }
             }
             case "ADMIN" -> {
             }

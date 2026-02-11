@@ -2,6 +2,7 @@ package com.unileste.sisges.service;
 
 import com.unileste.sisges.controller.dto.auth.UserResponse;
 import com.unileste.sisges.controller.dto.user.UserSearchRequest;
+import com.unileste.sisges.controller.dto.user.UserSearchResponse;
 import com.unileste.sisges.model.User;
 import com.unileste.sisges.repository.UserRepository;
 import com.unileste.sisges.repository.specification.UserSpecification;
@@ -18,11 +19,11 @@ public class UserService {
 
     private final UserRepository userRepository;
 
-    public List<UserResponse> searchUsers(UserSearchRequest request) {
+    public List<UserSearchResponse> searchUsers(UserSearchRequest request) {
         Specification<User> spec = UserSpecification.withFilters(request);
         return userRepository.findAll(spec)
                 .stream()
-                .map(this::toUserResponse)
+                .map(this::toUserSearchResponse)
                 .toList();
     }
 
@@ -30,6 +31,15 @@ public class UserService {
         User user = userRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuário", id));
         return toUserResponse(user);
+    }
+
+    private UserSearchResponse toUserSearchResponse(User user) {
+        return UserSearchResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .role(user.getUserRole())
+                .build();
     }
 
     private UserResponse toUserResponse(User user) {

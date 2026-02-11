@@ -19,16 +19,6 @@ public class RegisterUserRequest {
     @Size(max = 255)
     private String name;
 
-    @NotBlank(message = "E-mail é obrigatório")
-    @Email(message = "E-mail inválido")
-    @Size(max = 255)
-    @Pattern(regexp = "^.+@sisges\\.com$", message = "O e-mail deve pertencer ao domínio @sisges.com")
-    private String email;
-
-    @NotBlank(message = "Registro/matrícula é obrigatório")
-    @Size(max = 50)
-    private String register;
-
     @NotBlank(message = "Senha é obrigatória")
     @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
     private String password;
