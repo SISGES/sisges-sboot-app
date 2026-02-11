@@ -4,25 +4,32 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "teacher", schema = "sisges")
+@Table(name = "discipline_material", schema = "sisges")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Teacher {
+public class DisciplineMaterial {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
-    private User baseData;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "discipline_id", nullable = false)
+    private Discipline discipline;
+
+    @Column(nullable = false)
+    private String title;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "material_type", length = 50)
+    private String materialType;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -32,10 +39,6 @@ public class Teacher {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
-
-    @ManyToMany(mappedBy = "teachers")
-    @Builder.Default
-    private List<SchoolClass> classes = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

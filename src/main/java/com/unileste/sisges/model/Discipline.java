@@ -8,29 +8,23 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "student", schema = "sisges")
+@Table(name = "discipline", schema = "sisges")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Student {
+public class Discipline {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
-    private User baseData;
+    @Column(nullable = false, unique = true, length = 150)
+    private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "responsible_id")
-    private StudentResponsible responsible;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
-    private SchoolClass currentClass;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -41,13 +35,22 @@ public class Student {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany(mappedBy = "disciplines")
     @Builder.Default
-    private List<StudentDocument> documents = new ArrayList<>();
+    private List<SchoolClass> schoolClasses = new ArrayList<>();
 
-    @OneToMany(mappedBy = "student")
+    @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<Attendance> attendances = new ArrayList<>();
+    private List<DisciplineMaterial> materials = new ArrayList<>();
+
+    @OneToMany(mappedBy = "discipline", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("orderIndex ASC")
+    @Builder.Default
+    private List<Lesson> lessons = new ArrayList<>();
+
+    @OneToMany(mappedBy = "discipline")
+    @Builder.Default
+    private List<ClassMeeting> classMeetings = new ArrayList<>();
 
     @PrePersist
     protected void onCreate() {

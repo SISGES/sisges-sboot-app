@@ -1,79 +1,149 @@
 package com.unileste.sisges.service;
 
-import com.unileste.sisges.controller.dto.request.LoginUserDto;
-import com.unileste.sisges.controller.dto.request.RegisterUserRequest;
-import com.unileste.sisges.controller.dto.request.StudentRequest;
-import com.unileste.sisges.controller.dto.request.TeacherRequest;
-import com.unileste.sisges.enums.UserRoleENUM;
-import com.unileste.sisges.mapper.UserMapper;
+import com.unileste.sisges.controller.dto.auth.LoginRequest;
+import com.unileste.sisges.controller.dto.auth.LoginResponse;
+import com.unileste.sisges.controller.dto.auth.RegisterUserRequest;
+import com.unileste.sisges.controller.dto.auth.UserResponse;
+import com.unileste.sisges.model.SchoolClass;
+import com.unileste.sisges.model.Student;
+import com.unileste.sisges.model.StudentResponsible;
+import com.unileste.sisges.model.Teacher;
 import com.unileste.sisges.model.User;
+import com.unileste.sisges.repository.SchoolClassRepository;
+import com.unileste.sisges.repository.StudentRepository;
+import com.unileste.sisges.repository.StudentResponsibleRepository;
+import com.unileste.sisges.repository.TeacherRepository;
 import com.unileste.sisges.repository.UserRepository;
+import com.unileste.sisges.security.JwtService;
+import com.unileste.sisges.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.util.Optional;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
 
-    private final RegisterService registerService;
-    private final StudentService studentService;
-    private final TeacherService teacherService;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
+    private final TeacherRepository teacherRepository;
+    private final StudentRepository studentRepository;
+    private final StudentResponsibleRepository studentResponsibleRepository;
+    private final SchoolClassRepository schoolClassRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public User signup(RegisterUserRequest input) {
-        User user = UserMapper.toEntity(input);
-        String encodedPassword = passwordEncoder.encode(input.getPassword());
-        user.setPassword(encodedPassword);
-
-        user.setRegister(registerService.generateRegister(UserRoleENUM.fromCode(input.getUserRole())));
-
-        User createdUser = userRepository.save(user);
-        this.createCorrectEntity(createdUser);
-
-        return createdUser;
-    }
-
-    public User authenticate(LoginUserDto input) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        input.getEmail(),
-                        input.getPassword()
-                )
+    public LoginResponse login(LoginRequest request) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        return userRepository.findByEmail(input.getEmail())
-                .orElseThrow();
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        String token = jwtService.generateToken(principal);
+
+        return LoginResponse.builder()
+                .accessToken(token)
+                .tokenType("Bearer")
+                .user(LoginResponse.UserInfo.builder()
+                        .id(principal.getId())
+                        .name(principal.getName())
+                        .email(principal.getEmail())
+                        .register(principal.getRegister())
+                        .role(principal.getRole())
+                        .build())
+                .build();
     }
 
-    private void createCorrectEntity(User entity) {
-        if (entity.getUserRole() != UserRoleENUM.ADMIN && entity.getUserRole() != UserRoleENUM.DEV_ADMIN) {
-            if (entity.getUserRole() == UserRoleENUM.STUDENT) {
-                studentService.create(StudentRequest
-                        .builder()
-                        .userId(entity.getId())
-                        .register(entity.getRegister())
-                        .build());
-            } else {
-                teacherService.create(TeacherRequest
-                        .builder()
-                        .userId(entity.getId())
-                        .register(entity.getRegister())
-                        .build());
-            }
+    @Transactional
+    public UserResponse register(RegisterUserRequest request) {
+        if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
+            throw new IllegalArgumentException("E-mail já cadastrado: " + request.getEmail());
         }
+        if (userRepository.existsByRegisterAndDeletedAtIsNull(request.getRegister())) {
+            throw new IllegalArgumentException("Registro/matrícula já cadastrado: " + request.getRegister());
+        }
+
+        User user = User.builder()
+                .name(request.getName())
+                .email(request.getEmail())
+                .register(request.getRegister())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .birthDate(request.getBirthDate())
+                .gender(request.getGender())
+                .userRole(request.getRole())
+                .build();
+
+        user = userRepository.save(user);
+
+        switch (request.getRole()) {
+            case "TEACHER" -> {
+                Teacher teacher = Teacher.builder()
+                        .baseData(user)
+                        .build();
+                teacherRepository.save(teacher);
+            }
+            case "STUDENT" -> {
+                if (request.getResponsibleId() == null && request.getResponsibleData() == null) {
+                    throw new IllegalArgumentException("Aluno deve ter um responsável legal (informe responsibleId ou responsibleData).");
+                }
+                StudentResponsible responsible = resolveResponsible(request);
+                SchoolClass schoolClass = resolveSchoolClass(request);
+                Student student = Student.builder()
+                        .baseData(user)
+                        .responsible(responsible)
+                        .currentClass(schoolClass)
+                        .build();
+                studentRepository.save(student);
+            }
+            case "ADMIN" -> {
+                // Apenas User, sem perfil adicional
+            }
+            default -> throw new IllegalArgumentException("Papel inválido: " + request.getRole());
+        }
+
+        return toUserResponse(user);
     }
 
-    public UserRoleENUM verifyUserRole() {
-        String authenticatedEmail = SecurityContextHolder.getContext().getAuthentication().getName();
-        Optional<User> optUser = userRepository.findByEmail(authenticatedEmail);
-        return optUser.map(User::getUserRole).orElse(null);
+    private StudentResponsible resolveResponsible(RegisterUserRequest request) {
+        if (request.getResponsibleData() != null) {
+            RegisterUserRequest.ResponsibleData rd = request.getResponsibleData();
+            StudentResponsible sr = StudentResponsible.builder()
+                    .name(rd.getName())
+                    .phone(rd.getPhone())
+                    .alternativePhone(rd.getAlternativePhone())
+                    .email(rd.getEmail())
+                    .alternativeEmail(rd.getAlternativeEmail())
+                    .build();
+            return studentResponsibleRepository.save(sr);
+        }
+        if (request.getResponsibleId() != null) {
+            return studentResponsibleRepository.findById(request.getResponsibleId())
+                    .orElseThrow(() -> new IllegalArgumentException("Responsável não encontrado: " + request.getResponsibleId()));
+        }
+        return null;
+    }
+
+    private SchoolClass resolveSchoolClass(RegisterUserRequest request) {
+        if (request.getClassId() != null) {
+            return schoolClassRepository.findById(request.getClassId())
+                    .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada: " + request.getClassId()));
+        }
+        return null;
+    }
+
+    private UserResponse toUserResponse(User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .name(user.getName())
+                .email(user.getEmail())
+                .register(user.getRegister())
+                .role(user.getUserRole())
+                .birthDate(user.getBirthDate())
+                .gender(user.getGender())
+                .build();
     }
 }
