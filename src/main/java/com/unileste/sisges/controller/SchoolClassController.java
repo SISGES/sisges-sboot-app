@@ -42,4 +42,58 @@ public class SchoolClassController {
         SchoolClassResponse response = schoolClassService.findById(id);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/{classId}/teacher/add/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SchoolClassResponse> addTeacher(
+            @PathVariable Integer classId,
+            @PathVariable Integer id) {
+        SchoolClassResponse response = schoolClassService.addTeacher(classId, id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{classId}/student/add/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SchoolClassResponse> addStudent(
+            @PathVariable Integer classId,
+            @PathVariable Integer id) {
+        SchoolClassResponse response = schoolClassService.addStudent(classId, id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{classId}/teacher/remove/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SchoolClassResponse> removeTeacher(
+            @PathVariable Integer classId,
+            @PathVariable Integer id) {
+        SchoolClassResponse response = schoolClassService.removeTeacher(classId, id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{classId}/student/remove/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SchoolClassResponse> removeStudent(
+            @PathVariable Integer classId,
+            @PathVariable Integer id) {
+        SchoolClassResponse response = schoolClassService.removeStudent(classId, id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{classId}/discipline/add/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SchoolClassResponse> addDiscipline(
+            @PathVariable Integer classId,
+            @PathVariable Integer id) {
+        SchoolClassResponse response = schoolClassService.addDiscipline(classId, id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{classId}/discipline/remove/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<SchoolClassResponse> removeDiscipline(
+            @PathVariable Integer classId,
+            @PathVariable Integer id) {
+        SchoolClassResponse response = schoolClassService.removeDiscipline(classId, id);
+        return ResponseEntity.ok(response);
+    }
 }

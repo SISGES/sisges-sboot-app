@@ -1,5 +1,6 @@
 package com.unileste.sisges.controller.dto.schoolclass;
 
+import com.unileste.sisges.controller.dto.discipline.DisciplineSimpleResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,4 +19,5 @@ public class SchoolClassResponse {
     private String academicYear;
     private List<StudentSimpleResponse> students;
     private List<TeacherSimpleResponse> teachers;
+    private List<DisciplineSimpleResponse> disciplines;
 }
