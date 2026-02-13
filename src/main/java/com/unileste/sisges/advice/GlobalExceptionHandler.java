@@ -1,76 +1,82 @@
 package com.unileste.sisges.advice;
 
+import com.unileste.sisges.exception.BusinessRuleException;
+import com.unileste.sisges.exception.ErrorCode;
+import com.unileste.sisges.exception.ErrorResponse;
+import com.unileste.sisges.exception.FieldValidationError;
+import com.unileste.sisges.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.List;
-import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    private static final String MESSAGE_KEY = "message";
-    private static final String ERRORS_KEY = "errors";
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(MESSAGE_KEY, "E-mail ou senha inválidos"));
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_INVALID_CREDENTIALS);
+        return ResponseEntity.ok(response);
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, String>> handleAuthentication(AuthenticationException ex) {
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of(MESSAGE_KEY, ex.getMessage() != null ? ex.getMessage() : "Não autorizado"));
+    public ResponseEntity<ErrorResponse> handleAuthentication(AuthenticationException ex) {
+        String message = ex.getMessage() != null ? ex.getMessage() : ErrorCode.AUTH_UNAUTHORIZED.getDefaultMessage();
+        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_UNAUTHORIZED, message);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(MESSAGE_KEY, ex.getMessage()));
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.AUTH_FORBIDDEN);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
-        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(GlobalExceptionHandler::toFieldError)
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        List<FieldValidationError> fieldErrors = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> FieldValidationError.builder()
+                        .field(fe.getField())
+                        .message(fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "inválido")
+                        .build())
                 .toList();
-        return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(Map.of(
-                        MESSAGE_KEY, "Erro de validação",
-                        ERRORS_KEY, errors
-                ));
+
+        ErrorResponse response = ErrorResponse.ofValidation(fieldErrors);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @ExceptionHandler(BusinessRuleException.class)
+    public ResponseEntity<ErrorResponse> handleBusinessRule(BusinessRuleException ex) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.BUSINESS_RULE_VIOLATION, ex.getMessage());
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.RESOURCE_NOT_FOUND, ex.getMessage());
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<Map<String, String>> handleDataIntegrity(DataIntegrityViolationException ex) {
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(Map.of(MESSAGE_KEY, "Conflito de dados. Verifique se os dados não estão duplicados ou inconsistentes."));
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        ErrorResponse response = ErrorResponse.of(ErrorCode.DATA_CONFLICT);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
-        return ResponseEntity
-                .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of(MESSAGE_KEY, "Erro interno do servidor"));
-    }
-
-    private static Map<String, String> toFieldError(FieldError fe) {
-        return Map.of(
-                "field", fe.getField(),
-                "message", fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "inválido"
-        );
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        log.error("Erro não tratado: {}", ex.getMessage(), ex);
+        ErrorResponse response = ErrorResponse.of(ErrorCode.INTERNAL_ERROR);
+        return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

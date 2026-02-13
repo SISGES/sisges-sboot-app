@@ -3,7 +3,10 @@ package com.unileste.sisges.service;
 import com.unileste.sisges.controller.dto.auth.LoginRequest;
 import com.unileste.sisges.controller.dto.auth.LoginResponse;
 import com.unileste.sisges.controller.dto.auth.RegisterUserRequest;
+import com.unileste.sisges.controller.dto.auth.ResponsibleData;
 import com.unileste.sisges.controller.dto.auth.UserResponse;
+import com.unileste.sisges.exception.BusinessRuleException;
+import com.unileste.sisges.exception.ResourceNotFoundException;
 import com.unileste.sisges.model.SchoolClass;
 import com.unileste.sisges.model.Student;
 import com.unileste.sisges.model.StudentResponsible;
@@ -36,6 +39,7 @@ public class AuthService {
     private final StudentResponsibleRepository studentResponsibleRepository;
     private final SchoolClassRepository schoolClassRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RegistrationService registrationService;
 
     public LoginResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
@@ -60,17 +64,13 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(RegisterUserRequest request) {
-        if (userRepository.existsByEmailAndDeletedAtIsNull(request.getEmail())) {
-            throw new IllegalArgumentException("E-mail já cadastrado: " + request.getEmail());
-        }
-        if (userRepository.existsByRegisterAndDeletedAtIsNull(request.getRegister())) {
-            throw new IllegalArgumentException("Registro/matrícula já cadastrado: " + request.getRegister());
-        }
+        String register = registrationService.generateRegister(request.getRole());
+        String email = registrationService.generateEmail(register);
 
         User user = User.builder()
                 .name(request.getName())
-                .email(request.getEmail())
-                .register(request.getRegister())
+                .email(email)
+                .register(register)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .birthDate(request.getBirthDate())
                 .gender(request.getGender())
@@ -88,21 +88,23 @@ public class AuthService {
             }
             case "STUDENT" -> {
                 if (request.getResponsibleId() == null && request.getResponsibleData() == null) {
-                    throw new IllegalArgumentException("Aluno deve ter um responsável legal (informe responsibleId ou responsibleData).");
+                    throw new BusinessRuleException("Aluno deve ter um responsável legal (informe responsibleId ou responsibleData).");
                 }
                 StudentResponsible responsible = resolveResponsible(request);
                 SchoolClass schoolClass = resolveSchoolClass(request);
                 Student student = Student.builder()
                         .baseData(user)
-                        .responsible(responsible)
                         .currentClass(schoolClass)
                         .build();
-                studentRepository.save(student);
+                student = studentRepository.save(student);
+                if (responsible != null) {
+                    student.getResponsibles().add(responsible);
+                    studentRepository.save(student);
+                }
             }
             case "ADMIN" -> {
-                // Apenas User, sem perfil adicional
             }
-            default -> throw new IllegalArgumentException("Papel inválido: " + request.getRole());
+            default -> throw new BusinessRuleException("Papel inválido: " + request.getRole());
         }
 
         return toUserResponse(user);
@@ -110,7 +112,7 @@ public class AuthService {
 
     private StudentResponsible resolveResponsible(RegisterUserRequest request) {
         if (request.getResponsibleData() != null) {
-            RegisterUserRequest.ResponsibleData rd = request.getResponsibleData();
+            ResponsibleData rd = request.getResponsibleData();
             StudentResponsible sr = StudentResponsible.builder()
                     .name(rd.getName())
                     .phone(rd.getPhone())
@@ -122,7 +124,7 @@ public class AuthService {
         }
         if (request.getResponsibleId() != null) {
             return studentResponsibleRepository.findById(request.getResponsibleId())
-                    .orElseThrow(() -> new IllegalArgumentException("Responsável não encontrado: " + request.getResponsibleId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Responsável", request.getResponsibleId()));
         }
         return null;
     }
@@ -130,7 +132,7 @@ public class AuthService {
     private SchoolClass resolveSchoolClass(RegisterUserRequest request) {
         if (request.getClassId() != null) {
             return schoolClassRepository.findById(request.getClassId())
-                    .orElseThrow(() -> new IllegalArgumentException("Turma não encontrada: " + request.getClassId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Turma", request.getClassId()));
         }
         return null;
     }

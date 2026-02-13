@@ -23,7 +23,7 @@ public class SchoolClass {
     @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(name = "academic_year", nullable = false, length = 9)
+    @Column(name = "academic_year", nullable = false, length = 30)
     private String academicYear;
 
     @Column(name = "created_at", nullable = false, updatable = false)

@@ -24,9 +24,15 @@ public class Student {
     @JoinColumn(name = "user_id", referencedColumnName = "id", nullable = false, unique = true)
     private User baseData;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "responsible_id")
-    private StudentResponsible responsible;
+    @ManyToMany
+    @JoinTable(
+        name = "student_responsible_link",
+        schema = "sisges",
+        joinColumns = @JoinColumn(name = "student_id"),
+        inverseJoinColumns = @JoinColumn(name = "responsible_id")
+    )
+    @Builder.Default
+    private List<StudentResponsible> responsibles = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "class_id")
