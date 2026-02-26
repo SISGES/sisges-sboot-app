@@ -28,6 +28,13 @@ public class SchoolClassController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+    @DeleteMapping("delete/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
+        schoolClassService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<SchoolClassSearchResponse>> search(
