@@ -27,9 +27,10 @@ public class UserPrincipal implements UserDetails {
         this.email = user.getEmail();
         this.register = user.getRegister();
         this.password = user.getPassword();
-        this.role = user.getUserRole();
-        this.authorities = user.getUserRole() != null
-                ? List.of(new SimpleGrantedAuthority("ROLE_" + user.getUserRole()))
+        this.role = user.getUserRole() != null ? user.getUserRole().trim().toUpperCase() : null;
+        String role = user.getUserRole() != null ? user.getUserRole().trim().toUpperCase() : null;
+        this.authorities = role != null && !role.isEmpty()
+                ? List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 : List.of();
     }
 

@@ -26,6 +26,16 @@ public class Discipline {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @ManyToMany
+    @JoinTable(
+            name = "discipline_teacher",
+            schema = "sisges",
+            joinColumns = @JoinColumn(name = "discipline_id"),
+            inverseJoinColumns = @JoinColumn(name = "teacher_id")
+    )
+    @Builder.Default
+    private List<Teacher> teachers = new ArrayList<>();
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

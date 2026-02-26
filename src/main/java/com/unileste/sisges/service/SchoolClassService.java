@@ -9,6 +9,8 @@ import com.unileste.sisges.controller.dto.schoolclass.StudentSimpleResponse;
 import com.unileste.sisges.controller.dto.schoolclass.TeacherSimpleResponse;
 import com.unileste.sisges.exception.BusinessRuleException;
 import com.unileste.sisges.exception.ResourceNotFoundException;
+import com.unileste.sisges.security.UserPrincipal;
+import org.springframework.security.access.AccessDeniedException;
 import com.unileste.sisges.model.Discipline;
 import com.unileste.sisges.model.SchoolClass;
 import com.unileste.sisges.model.Student;
@@ -106,9 +108,22 @@ public class SchoolClassService {
     }
 
     @Transactional(readOnly = true)
-    public SchoolClassResponse findById(Integer id) {
+    public SchoolClassResponse findById(Integer id, UserPrincipal principal) {
         SchoolClass schoolClass = schoolClassRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Turma", id));
+
+        if ("TEACHER".equals(principal.getRole())) {
+            Teacher teacher = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(principal.getId())
+                    .orElseThrow(() -> new AccessDeniedException("Professor não encontrado."));
+
+            boolean isLinked = schoolClass.getTeachers().stream()
+                    .anyMatch(t -> t.getId().equals(teacher.getId()));
+
+            if (!isLinked) {
+                throw new AccessDeniedException("Acesso negado: a turma não está vinculada a você.");
+            }
+        }
+
         return toSchoolClassResponse(schoolClass);
     }
 

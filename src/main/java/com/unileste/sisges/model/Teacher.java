@@ -37,6 +37,10 @@ public class Teacher {
     @Builder.Default
     private List<SchoolClass> classes = new ArrayList<>();
 
+    @ManyToMany(mappedBy = "teachers")
+    @Builder.Default
+    private List<Discipline> disciplines = new ArrayList<>();
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();

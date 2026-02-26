@@ -4,12 +4,14 @@ import com.unileste.sisges.controller.dto.schoolclass.CreateSchoolClassRequest;
 import com.unileste.sisges.controller.dto.schoolclass.SchoolClassResponse;
 import com.unileste.sisges.controller.dto.schoolclass.SchoolClassSearchRequest;
 import com.unileste.sisges.controller.dto.schoolclass.SchoolClassSearchResponse;
+import com.unileste.sisges.security.UserPrincipal;
 import com.unileste.sisges.service.SchoolClassService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,9 +46,11 @@ public class SchoolClassController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<SchoolClassResponse> findById(@PathVariable Integer id) {
-        SchoolClassResponse response = schoolClassService.findById(id);
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
+    public ResponseEntity<SchoolClassResponse> findById(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        SchoolClassResponse response = schoolClassService.findById(id, principal);
         return ResponseEntity.ok(response);
     }
 

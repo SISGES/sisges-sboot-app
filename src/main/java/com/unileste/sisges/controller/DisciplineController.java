@@ -2,6 +2,7 @@ package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.discipline.CreateDisciplineRequest;
 import com.unileste.sisges.controller.dto.discipline.DisciplineResponse;
+import com.unileste.sisges.controller.dto.discipline.UpdateDisciplineRequest;
 import com.unileste.sisges.service.DisciplineService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,15 @@ public class DisciplineController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<DisciplineResponse> findById(@PathVariable Integer id) {
         DisciplineResponse response = disciplineService.findById(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/update/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DisciplineResponse> update(
+            @PathVariable Integer id,
+            @Valid @RequestBody UpdateDisciplineRequest request) {
+        DisciplineResponse response = disciplineService.update(id, request);
         return ResponseEntity.ok(response);
     }
 }

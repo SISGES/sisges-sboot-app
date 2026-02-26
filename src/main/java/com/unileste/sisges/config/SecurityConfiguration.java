@@ -23,7 +23,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfiguration {
 
@@ -31,7 +31,8 @@ public class SecurityConfiguration {
     private final UserDetailsService userDetailsService;
 
     private static final String[] AUTH_WHITELIST = {
-            "/api/auth/**",
+            "/api/auth/login",
+            "/api/auth/register",
             "/swagger-ui/**",
             "/swagger-ui.html",
             "/v3/api-docs/**"

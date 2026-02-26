@@ -38,6 +38,13 @@ public class TeacherService {
         return toTeacherResponse(teacher);
     }
 
+    @Transactional(readOnly = true)
+    public TeacherResponse findByUserId(Integer userId) {
+        Teacher teacher = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Professor", userId));
+        return toTeacherResponse(teacher);
+    }
+
     private TeacherSearchResponse toTeacherSearchResponse(Teacher teacher) {
         User baseData = teacher.getBaseData();
         return TeacherSearchResponse.builder()
