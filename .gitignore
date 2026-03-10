@@ -34,3 +34,6 @@ build/
 
 ### Instructions ###
 INSTRUCTIONS_*.md
+
+### Secrets - nunca commitar ###
+application-local.properties

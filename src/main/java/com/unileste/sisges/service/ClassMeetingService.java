@@ -99,12 +99,16 @@ public class ClassMeetingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Aula", id));
 
         SchoolClass sc = meeting.getSchoolClass();
+        var attendanceMap = meeting.getAttendances().stream()
+                .filter(a -> a.getDeletedAt() == null)
+                .collect(Collectors.toMap(a -> a.getStudent().getId(), Attendance::getPresent, (a, b) -> a));
         List<StudentSimpleResponse> students = sc.getStudents().stream()
                 .filter(s -> s.getDeletedAt() == null)
                 .map(s -> StudentSimpleResponse.builder()
                         .id(s.getId())
                         .name(s.getBaseData().getName())
                         .email(s.getBaseData().getEmail())
+                        .present(attendanceMap.get(s.getId()))
                         .build())
                 .collect(Collectors.toList());
 

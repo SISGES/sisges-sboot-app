@@ -6,41 +6,30 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "discipline_material", schema = "sisges")
+@Table(name = "evaluative_activity", schema = "sisges")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class DisciplineMaterial {
+public class EvaluativeActivity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "discipline_id", nullable = false)
-    private Discipline discipline;
+    @JoinColumn(name = "class_meeting_id", nullable = false)
+    private ClassMeeting classMeeting;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 255)
     private String title;
 
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "material_type", length = 50)
-    private String materialType;
-
     @Column(name = "file_path", length = 500)
     private String filePath;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "class_id")
-    private SchoolClass schoolClass;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "teacher_id")
-    private Teacher teacher;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

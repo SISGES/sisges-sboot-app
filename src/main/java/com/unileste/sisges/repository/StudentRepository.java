@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface StudentRepository extends JpaRepository<Student, Integer>, JpaSpecificationExecutor<Student> {
 
     Optional<Student> findByIdAndDeletedAtIsNull(Integer id);
+    Optional<Student> findByBaseData_IdAndDeletedAtIsNull(Integer baseDataId);
 }

@@ -21,7 +21,7 @@ public class DisciplineController {
     private final DisciplineService disciplineService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<List<DisciplineResponse>> findAll() {
         return ResponseEntity.ok(disciplineService.findAll());
     }
@@ -34,7 +34,7 @@ public class DisciplineController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<DisciplineResponse> findById(@PathVariable Integer id) {
         DisciplineResponse response = disciplineService.findById(id);
         return ResponseEntity.ok(response);

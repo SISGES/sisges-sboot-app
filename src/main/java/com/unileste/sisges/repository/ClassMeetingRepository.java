@@ -15,6 +15,8 @@ public interface ClassMeetingRepository extends JpaRepository<ClassMeeting, Inte
 
     Optional<ClassMeeting> findByIdAndDeletedAtIsNull(Integer id);
 
+    List<ClassMeeting> findBySchoolClassIdAndDeletedAtIsNull(Integer schoolClassId);
+
     @Query("""
             SELECT cm FROM ClassMeeting cm
             WHERE cm.schoolClass.id = :classId

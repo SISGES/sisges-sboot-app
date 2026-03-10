@@ -1,4 +1,4 @@
-package com.unileste.sisges.controller.dto.schoolclass;
+package com.unileste.sisges.controller.dto.announcement;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,10 +9,8 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StudentSimpleResponse {
+public class UserSimpleResponse {
 
     private Integer id;
     private String name;
-    private String email;
-    private Boolean present;
 }
