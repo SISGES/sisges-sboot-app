@@ -53,7 +53,7 @@ public class AnnouncementController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<AnnouncementResponse> create(
             @Valid @RequestBody CreateAnnouncementRequest request,
             @AuthenticationPrincipal UserPrincipal principal) {
