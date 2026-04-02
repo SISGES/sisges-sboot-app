@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,36 @@ public class DisciplineMaterialService {
                 ? materialRepository.findByDisciplineIdAndSchoolClassIdAndDeletedAtIsNullOrderByCreatedAtDesc(disciplineId, classId)
                 : materialRepository.findBySchoolClassIdAndDeletedAtIsNullOrderByCreatedAtDesc(classId);
         return materials.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DisciplineMaterialResponse> findByClassAndDisciplineForTeacher(
+            Integer classId, Integer disciplineId, Integer teacherUserId) {
+        Teacher teacher = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(teacherUserId)
+                .orElseThrow(() -> new BusinessRuleException("Professor não encontrado."));
+        List<Integer> allowedDisciplineIds = teacher.getDisciplines().stream()
+                .filter(d -> d.getDeletedAt() == null)
+                .map(Discipline::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (allowedDisciplineIds.isEmpty()) {
+            return List.of();
+        }
+        if (disciplineId != null) {
+            if (!allowedDisciplineIds.contains(disciplineId)) {
+                return List.of();
+            }
+            return materialRepository
+                    .findByDisciplineIdAndSchoolClassIdAndDeletedAtIsNullOrderByCreatedAtDesc(disciplineId, classId)
+                    .stream()
+                    .map(this::toResponse)
+                    .toList();
+        }
+        return materialRepository
+                .findBySchoolClass_IdAndDiscipline_IdInAndDeletedAtIsNullOrderByCreatedAtDesc(classId, allowedDisciplineIds)
+                .stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)

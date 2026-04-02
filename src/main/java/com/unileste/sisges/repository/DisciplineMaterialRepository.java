@@ -3,6 +3,7 @@ package com.unileste.sisges.repository;
 import com.unileste.sisges.model.DisciplineMaterial;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface DisciplineMaterialRepository extends JpaRepository<DisciplineMaterial, Integer> {
@@ -13,4 +14,7 @@ public interface DisciplineMaterialRepository extends JpaRepository<DisciplineMa
 
     List<DisciplineMaterial> findByDisciplineIdAndSchoolClassIdAndDeletedAtIsNullOrderByCreatedAtDesc(
             Integer disciplineId, Integer classId);
+
+    List<DisciplineMaterial> findBySchoolClass_IdAndDiscipline_IdInAndDeletedAtIsNullOrderByCreatedAtDesc(
+            Integer classId, Collection<Integer> disciplineIds);
 }

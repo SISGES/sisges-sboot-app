@@ -32,22 +32,49 @@ public class DevDataSeedRunner implements ApplicationRunner {
     private static final String DOMAIN = "@sisges.com";
 
     private static final String[] GIVEN = {
-            "Ana", "Beatriz", "Carlos", "Daniela", "Eduardo", "Fernanda", "Gustavo", "Helena", "Igor", "Juliana",
-            "Kleber", "Larissa", "Marcos", "Natália", "Otávio", "Paula", "Rafael", "Sabrina", "Thiago", "Vanessa",
-            "Bruno", "Camila", "Diego", "Elisa", "Felipe"
+            "Ana", "Beatriz", "Bruno", "Camila", "Carlos", "Daniela", "Diego", "Eduardo", "Elisa", "Fernanda",
+            "Felipe", "Gustavo", "Helena", "Igor", "Isabela", "Juliana", "Kleber", "Larissa", "Lucas", "Marcos",
+            "Natália", "Otávio", "Paula", "Rafael", "Renata", "Sabrina", "Thiago", "Vanessa", "Vitória", "Yuri"
     };
 
-    private static final String[] FAMILY = {
-            "Silva", "Santos", "Oliveira", "Souza", "Rodrigues", "Ferreira", "Alves", "Pereira", "Lima", "Gomes",
-            "Ribeiro", "Carvalho", "Rocha", "Dias", "Barbosa", "Teixeira", "Cavalcante", "Moura", "Nascimento", "Freitas",
-            "Martins", "Cardoso", "Correia", "Monteiro", "Araújo"
+    private static final String[] MIDDLE = {
+            "Maria", "José", "João", "Ana", "Luís", "Paulo", "Luiza", "Antônio", "Francisco", "Gabriel"
+    };
+
+    private static final String[] SURNAME = {
+            "Almeida", "Alves", "Andrade", "Barbosa", "Batista", "Bernardes", "Botelho", "Cardoso", "Carvalho",
+            "Castro", "Coelho", "Costa", "Dias", "Duarte", "Fernandes", "Ferreira", "Freitas", "Garcia", "Gomes",
+            "Gonçalves", "Lima", "Lopes", "Machado", "Marques", "Martins", "Mendes", "Moraes", "Moreira", "Moura",
+            "Nascimento", "Nunes", "Oliveira", "Pereira", "Ramos", "Reis", "Ribeiro", "Rocha", "Rodrigues", "Santana",
+            "Santos", "Silva", "Soares", "Souza", "Teixeira", "Vieira"
+    };
+
+    private static final String[] TEACHER_FULL_NAME = {
+            "Ana Paula Ferreira Silva",
+            "Carlos Eduardo Ribeiro Santos",
+            "Mariana Lopes Oliveira",
+            "Roberto Alves Costa",
+            "Fernanda Teixeira Rodrigues",
+            "Lucas Henrique Pereira Gomes",
+            "Juliana Cristina Dias Souza",
+            "Ricardo Martins Nascimento",
+            "Patrícia Fernandes Carvalho",
+            "André Luiz Barbosa Lima",
+            "Camila Rocha Marques",
+            "Eduardo Gonçalves Cardoso",
+            "Sabrina Vieira Moraes",
+            "Thiago Nunes Freitas",
+            "Helena Santana Reis"
     };
 
     private static final String[] RESPONSIBLE_FULL = {
-            "Roberto Silva Mendes", "Sandra Oliveira Costa", "Marcos Antônio Pereira", "Luciana Ferreira Lima",
-            "Paulo Henrique Souza", "Cláudia Regina Dias", "Fernando Luís Gomes", "Adriana Martins Rocha",
-            "Ricardo Alberto Teixeira", "Patrícia Nunes Cardoso", "André Luiz Barbosa", "Juliana Costa Araújo",
-            "Felipe Augusto Ribeiro", "Carla Simone Moura", "Rodrigo César Nascimento"
+            "Roberto Silva Mendes", "Sandra Maria Oliveira Costa", "Marcos Antônio Pereira Lima",
+            "Luciana Ferreira Duarte", "Paulo Henrique Souza Ribeiro", "Cláudia Regina Dias Santos",
+            "Fernando Luís Gomes Almeida", "Adriana Martins Rocha Teixeira",
+            "Ricardo Alberto Teixeira Fernandes", "Patrícia Nunes Cardoso Andrade",
+            "André Luiz Barbosa Moura", "Juliana Costa Araújo Ramos",
+            "Felipe Augusto Ribeiro Machado", "Carla Simone Moura Lopes",
+            "Rodrigo César Nascimento Coelho"
     };
 
     private final UserRepository userRepository;
@@ -107,7 +134,7 @@ public class DevDataSeedRunner implements ApplicationRunner {
         }
 
         User admin = User.builder()
-                .name("Patrícia Mendes Rocha")
+                .name("Patrícia Mendes Rocha Albuquerque")
                 .email("adm0001" + DOMAIN)
                 .register("ADM0001")
                 .password(passwordEncoder.encode("admin123"))
@@ -120,7 +147,7 @@ public class DevDataSeedRunner implements ApplicationRunner {
         List<Teacher> teachers = new ArrayList<>();
         for (int i = 1; i <= 15; i++) {
             String reg = String.format("P%04d", i);
-            String tName = GIVEN[(i + 3) % GIVEN.length] + " " + FAMILY[(i * 5) % FAMILY.length] + " " + FAMILY[(i * 7 + 2) % FAMILY.length];
+            String tName = TEACHER_FULL_NAME[i - 1];
             User u = User.builder()
                     .name(tName)
                     .email(reg.toLowerCase() + DOMAIN)
@@ -160,7 +187,7 @@ public class DevDataSeedRunner implements ApplicationRunner {
         for (int i = 1; i <= 150; i++) {
             String reg = String.format("A%05d", i);
             int idx = i - 1;
-            String sName = GIVEN[idx % GIVEN.length] + " " + FAMILY[(idx / GIVEN.length) % FAMILY.length];
+            String sName = studentFullName(idx);
             User u = User.builder()
                     .name(sName)
                     .email(reg.toLowerCase() + DOMAIN)
@@ -449,4 +476,33 @@ public class DevDataSeedRunner implements ApplicationRunner {
     }
 
     private record SavedPost(Announcement announcement, LocalDateTime baseTime, int slot) {}
+
+    private static String studentFullName(int idx) {
+        int g1 = idx % GIVEN.length;
+        int g2 = (idx / 3) % GIVEN.length;
+        int s1 = (idx * 7) % SURNAME.length;
+        int s2 = (idx * 11 + 1) % SURNAME.length;
+        int s3 = (idx * 17 + 3) % SURNAME.length;
+        int m = idx % MIDDLE.length;
+        int pattern = idx % 7;
+        if (pattern == 0) {
+            return GIVEN[g1] + " " + SURNAME[s1];
+        }
+        if (pattern == 1) {
+            return GIVEN[g1] + " " + GIVEN[g2] + " " + SURNAME[s1];
+        }
+        if (pattern == 2) {
+            return GIVEN[g1] + " " + SURNAME[s1] + " " + SURNAME[s2];
+        }
+        if (pattern == 3) {
+            return GIVEN[g1] + " " + GIVEN[g2] + " " + SURNAME[s1] + " " + SURNAME[s2];
+        }
+        if (pattern == 4) {
+            return GIVEN[g1] + " " + SURNAME[s1] + " " + SURNAME[s2] + " " + SURNAME[s3];
+        }
+        if (pattern == 5) {
+            return GIVEN[g1] + " " + MIDDLE[m] + " " + SURNAME[s1] + " " + SURNAME[s2];
+        }
+        return GIVEN[g1] + " " + GIVEN[g2] + " " + MIDDLE[m] + " " + SURNAME[s1];
+    }
 }

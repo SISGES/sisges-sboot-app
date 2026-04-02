@@ -30,6 +30,12 @@ public class DisciplineMaterialController {
         if ("STUDENT".equals(principal.getRole())) {
             return ResponseEntity.ok(materialService.findForStudent(principal.getId()));
         }
+        if ("TEACHER".equals(principal.getRole())) {
+            if (classId == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            return ResponseEntity.ok(materialService.findByClassAndDisciplineForTeacher(classId, disciplineId, principal.getId()));
+        }
         if (classId != null) {
             return ResponseEntity.ok(materialService.findByClassAndDiscipline(classId, disciplineId));
         }
