@@ -3,10 +3,3 @@ target
 .gitignore
 .idea
 *.iml
-.mvn
-mvnw
-mvnw.cmd
-README.md
-*.log
-.DS_Store
-
