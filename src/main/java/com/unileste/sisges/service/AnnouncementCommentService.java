@@ -84,6 +84,26 @@ public class AnnouncementCommentService {
         feedNotificationService.broadcast("COMMENT_DELETED", announcementId);
     }
 
+    @Transactional
+    public AnnouncementCommentResponse updateComment(Integer announcementId, Integer commentId, Integer userId, CreateCommentRequest request) {
+        AnnouncementComment comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comentário não encontrado"));
+        if (comment.getDeletedAt() != null) {
+            throw new RuntimeException("Comentário não encontrado");
+        }
+        if (!comment.getAnnouncement().getId().equals(announcementId)) {
+            throw new RuntimeException("Comentário não pertence a este anúncio");
+        }
+        if (!comment.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Apenas o autor pode editar o comentário");
+        }
+
+        comment.setContent(request.getContent().trim());
+        comment = commentRepository.save(comment);
+        feedNotificationService.broadcast("COMMENT_UPDATED", announcementId);
+        return toResponse(comment);
+    }
+
     @Transactional(readOnly = true)
     public long countComments(Integer announcementId) {
         return commentRepository.countByAnnouncementIdAndDeletedAtIsNull(announcementId);

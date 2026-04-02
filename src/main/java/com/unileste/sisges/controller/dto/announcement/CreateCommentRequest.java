@@ -14,6 +14,6 @@ import lombok.NoArgsConstructor;
 public class CreateCommentRequest {
 
     @NotBlank(message = "Conteúdo do comentário é obrigatório")
-    @Size(max = 2000)
+    @Size(max = 250)
     private String content;
 }

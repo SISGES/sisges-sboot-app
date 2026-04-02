@@ -108,6 +108,18 @@ public class AnnouncementController {
         return ResponseEntity.ok(announcementCommentService.getComments(id));
     }
 
+    @PutMapping("/{id}/comments/{commentId}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AnnouncementCommentResponse> updateComment(
+            @PathVariable Integer id,
+            @PathVariable Integer commentId,
+            @Valid @RequestBody CreateCommentRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        Integer userId = principal != null ? principal.getId() : null;
+        AnnouncementCommentResponse response = announcementCommentService.updateComment(id, commentId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
     @DeleteMapping("/{id}/comments/{commentId}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteComment(

@@ -22,6 +22,7 @@ public class CreateAnnouncementRequest {
     @Size(max = 255)
     private String title;
 
+    @Size(max = 320)
     private String content;
 
     @NotBlank(message = "Tipo é obrigatório")
