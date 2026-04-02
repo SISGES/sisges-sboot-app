@@ -2,8 +2,6 @@ package com.unileste.sisges.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +15,6 @@ import java.util.UUID;
 
 @Service
 @Slf4j
-@ConditionalOnMissingBean(AzureBlobStorageService.class)
 public class LocalFileStorageService implements StorageService {
 
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("pdf", "txt", "docx", "doc", "png", "jpg", "jpeg", "gif", "webp");

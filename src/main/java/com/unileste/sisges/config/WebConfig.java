@@ -18,9 +18,7 @@ public class WebConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "http://[::1]:*",
-                "https://*.vercel.app",
-                "https://*.azurewebsites.net",
-                "https://*.azurestaticapps.net"
+                "https://*.vercel.app"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
