@@ -28,6 +28,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: postgres
       SECURITY_JWT_SECRET_KEY: docker-compose-dev-secret-min-32-chars-xx
       SISGES_UPLOAD_DIR: /app/uploads
+      SISGES_SEED_ENABLED: "true"
     volumes:
       - sisges-uploads:/app/uploads
 
@@ -40,7 +41,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "80:80"
+      - "3001:80"
 
 volumes:
   sisges-pgdata:

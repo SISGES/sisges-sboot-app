@@ -38,5 +38,8 @@ build/
 ### Instructions ###
 INSTRUCTIONS_*.md
 
+### Uploads locais ###
+uploads/
+
 ### Secrets - nunca commitar ###
 application-local.properties
