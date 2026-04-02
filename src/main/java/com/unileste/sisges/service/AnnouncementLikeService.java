@@ -20,6 +20,7 @@ public class AnnouncementLikeService {
     private final AnnouncementLikeRepository likeRepository;
     private final AnnouncementRepository announcementRepository;
     private final com.unileste.sisges.repository.UserRepository userRepository;
+    private final FeedNotificationService feedNotificationService;
 
     @Transactional
     public boolean toggleLike(Integer announcementId, Integer userId) {
@@ -33,9 +34,10 @@ public class AnnouncementLikeService {
         }
 
         var existing = likeRepository.findByAnnouncementIdAndUserId(announcementId, userId);
+        boolean liked;
         if (existing.isPresent()) {
             likeRepository.delete(existing.get());
-            return false; // unliked
+            liked = false;
         } else {
             var user = userRepository.getReferenceById(userId);
             AnnouncementLike like = AnnouncementLike.builder()
@@ -43,8 +45,10 @@ public class AnnouncementLikeService {
                     .user(user)
                     .build();
             likeRepository.save(like);
-            return true; // liked
+            liked = true;
         }
+        feedNotificationService.broadcast("LIKE", announcementId);
+        return liked;
     }
 
     @Transactional(readOnly = true)

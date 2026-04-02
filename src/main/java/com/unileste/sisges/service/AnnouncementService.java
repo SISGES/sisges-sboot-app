@@ -27,6 +27,7 @@ public class AnnouncementService {
     private final UserRepository userRepository;
     private final AnnouncementLikeService announcementLikeService;
     private final AnnouncementCommentService announcementCommentService;
+    private final FeedNotificationService feedNotificationService;
 
     @Transactional(readOnly = true)
     public List<AnnouncementResponse> findActiveForRole(String role, Integer currentUserId) {
@@ -81,6 +82,7 @@ public class AnnouncementService {
                 .build();
 
         announcement = announcementRepository.save(announcement);
+        feedNotificationService.broadcast("ANNOUNCEMENT_CREATED", announcement.getId());
         return toResponse(announcement, createdById);
     }
 
@@ -107,6 +109,7 @@ public class AnnouncementService {
         if (request.getActiveUntil() != null) a.setActiveUntil(request.getActiveUntil());
 
         a = announcementRepository.save(a);
+        feedNotificationService.broadcast("ANNOUNCEMENT_UPDATED", a.getId());
         return toResponse(a, null);
     }
 
@@ -116,6 +119,7 @@ public class AnnouncementService {
                 .orElseThrow(() -> new RuntimeException("Anúncio não encontrado"));
         a.setDeletedAt(LocalDateTime.now());
         announcementRepository.save(a);
+        feedNotificationService.broadcast("ANNOUNCEMENT_DELETED", id);
     }
 
     private AnnouncementResponse toResponse(Announcement a, Integer currentUserId) {

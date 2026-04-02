@@ -24,6 +24,7 @@ public class AnnouncementCommentService {
     private final AnnouncementCommentRepository commentRepository;
     private final AnnouncementRepository announcementRepository;
     private final UserRepository userRepository;
+    private final FeedNotificationService feedNotificationService;
 
     @Transactional
     public AnnouncementCommentResponse addComment(Integer announcementId, Integer userId, CreateCommentRequest request) {
@@ -46,6 +47,7 @@ public class AnnouncementCommentService {
                 .build();
 
         comment = commentRepository.save(comment);
+        feedNotificationService.broadcast("COMMENT", announcementId);
         return toResponse(comment);
     }
 
@@ -79,6 +81,7 @@ public class AnnouncementCommentService {
 
         comment.setDeletedAt(LocalDateTime.now());
         commentRepository.save(comment);
+        feedNotificationService.broadcast("COMMENT_DELETED", announcementId);
     }
 
     @Transactional(readOnly = true)
