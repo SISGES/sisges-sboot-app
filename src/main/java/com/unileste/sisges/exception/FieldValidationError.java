@@ -5,9 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * Representa um erro de validação em um campo específico.
- */
 @Data
 @Builder
 @NoArgsConstructor

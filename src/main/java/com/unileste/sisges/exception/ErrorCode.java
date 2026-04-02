@@ -4,10 +4,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
-/**
- * Códigos de erro padronizados da API do SISGES.
- * Cada código possui um HTTP status associado e uma mensagem padrão.
- */
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {

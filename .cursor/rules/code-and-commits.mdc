@@ -1,0 +1,9 @@
+---
+description: No source comments; commit messages without emojis
+alwaysApply: true
+---
+
+# Code and commits
+
+- Do not add comments in source code (no line, block, or Javadoc-style comments). Prefer clear names and structure instead.
+- Do not use emojis in commit messages. Use plain, descriptive subject lines and body text.

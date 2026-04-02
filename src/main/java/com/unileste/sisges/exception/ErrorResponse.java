@@ -9,12 +9,6 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/**
- * Resposta de erro padronizada da API do SISGES.
- * <p>
- * Campos obrigatórios: status, code, message, timestamp.
- * O campo "errors" é incluído apenas quando há erros de validação de campos.
- */
 @Data
 @Builder
 @NoArgsConstructor
@@ -27,6 +21,8 @@ public class ErrorResponse {
     private String code;
 
     private String message;
+
+    private String detail;
 
     private LocalDateTime timestamp;
 
@@ -46,6 +42,16 @@ public class ErrorResponse {
                 .status(errorCode.getHttpStatus().value())
                 .code(errorCode.name())
                 .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    public static ErrorResponse of(ErrorCode errorCode, String message, String detail) {
+        return ErrorResponse.builder()
+                .status(errorCode.getHttpStatus().value())
+                .code(errorCode.name())
+                .message(message)
+                .detail(detail)
                 .timestamp(LocalDateTime.now())
                 .build();
     }
