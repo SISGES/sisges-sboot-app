@@ -11,6 +11,7 @@ import com.unileste.sisges.repository.specification.ClassMeetingSpecification;
 import com.unileste.sisges.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -86,17 +87,34 @@ public class ClassMeetingService {
     }
 
     @Transactional(readOnly = true)
-    public List<ClassMeetingSearchResponse> search(ClassMeetingSearchRequest request) {
-        Specification<ClassMeeting> spec = ClassMeetingSpecification.withFilters(request);
+    public List<ClassMeetingSearchResponse> search(ClassMeetingSearchRequest request, UserPrincipal principal) {
+        Specification<ClassMeeting> spec;
+        if (principal != null && "TEACHER".equals(principal.getRole())) {
+            Teacher teacher = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(principal.getId())
+                    .orElseThrow(() -> new AccessDeniedException("Professor não encontrado."));
+            spec = ClassMeetingSpecification.withFiltersAndTeacher(request, teacher.getId());
+        } else {
+            spec = ClassMeetingSpecification.withFilters(request);
+        }
         return classMeetingRepository.findAll(spec).stream()
                 .map(this::toSearchResponse)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public ClassMeetingDetailResponse findById(Integer id) {
+    public ClassMeetingDetailResponse findById(Integer id, UserPrincipal principal) {
         ClassMeeting meeting = classMeetingRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Aula", id));
+
+        if (principal != null && "TEACHER".equals(principal.getRole())) {
+            Teacher current = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(principal.getId())
+                    .orElseThrow(() -> new AccessDeniedException("Professor não encontrado."));
+            Teacher assigned = meeting.getTeacher();
+            if (assigned == null || assigned.getDeletedAt() != null
+                    || !assigned.getId().equals(current.getId())) {
+                throw new AccessDeniedException("Acesso negado: esta aula não está vinculada a você.");
+            }
+        }
 
         SchoolClass sc = meeting.getSchoolClass();
         var attendanceMap = meeting.getAttendances().stream()
@@ -184,13 +202,23 @@ public class ClassMeetingService {
         meeting.setTeacher(teacher);
         classMeetingRepository.save(meeting);
 
-        return findById(id);
+        return findById(id, principal);
     }
 
     @Transactional
-    public void saveFrequency(Integer meetingId, FrequencyRequest request) {
+    public void saveFrequency(Integer meetingId, FrequencyRequest request, UserPrincipal principal) {
         ClassMeeting meeting = classMeetingRepository.findByIdAndDeletedAtIsNull(meetingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Aula", meetingId));
+
+        if (principal != null && "TEACHER".equals(principal.getRole())) {
+            Teacher current = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(principal.getId())
+                    .orElseThrow(() -> new AccessDeniedException("Professor não encontrado."));
+            Teacher assigned = meeting.getTeacher();
+            if (assigned == null || assigned.getDeletedAt() != null
+                    || !assigned.getId().equals(current.getId())) {
+                throw new AccessDeniedException("Acesso negado: esta aula não está vinculada a você.");
+            }
+        }
 
         List<Student> classStudents = meeting.getSchoolClass().getStudents().stream()
                 .filter(s -> s.getDeletedAt() == null)

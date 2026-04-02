@@ -99,8 +99,15 @@ public class SchoolClassService {
     }
 
     @Transactional(readOnly = true)
-    public List<SchoolClassSearchResponse> search(SchoolClassSearchRequest request) {
-        Specification<SchoolClass> spec = SchoolClassSpecification.withFilters(request);
+    public List<SchoolClassSearchResponse> search(SchoolClassSearchRequest request, UserPrincipal principal) {
+        Specification<SchoolClass> spec;
+        if (principal != null && "TEACHER".equals(principal.getRole())) {
+            Teacher teacher = teacherRepository.findByBaseData_IdAndDeletedAtIsNull(principal.getId())
+                    .orElseThrow(() -> new AccessDeniedException("Professor não encontrado."));
+            spec = SchoolClassSpecification.withFiltersForTeacher(request, teacher.getId());
+        } else {
+            spec = SchoolClassSpecification.withFilters(request);
+        }
         return schoolClassRepository.findAll(spec)
                 .stream()
                 .map(this::toSchoolClassSearchResponse)

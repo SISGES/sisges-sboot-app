@@ -32,15 +32,20 @@ public class ClassMeetingController {
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<List<ClassMeetingSearchResponse>> search(
-            @RequestBody(required = false) ClassMeetingSearchRequest request) {
-        List<ClassMeetingSearchResponse> meetings = classMeetingService.search(request != null ? request : ClassMeetingSearchRequest.builder().build());
+            @RequestBody(required = false) ClassMeetingSearchRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        List<ClassMeetingSearchResponse> meetings = classMeetingService.search(
+                request != null ? request : ClassMeetingSearchRequest.builder().build(),
+                principal);
         return ResponseEntity.ok(meetings);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
-    public ResponseEntity<ClassMeetingDetailResponse> findById(@PathVariable Integer id) {
-        ClassMeetingDetailResponse response = classMeetingService.findById(id);
+    public ResponseEntity<ClassMeetingDetailResponse> findById(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        ClassMeetingDetailResponse response = classMeetingService.findById(id, principal);
         return ResponseEntity.ok(response);
     }
 
@@ -65,8 +70,9 @@ public class ClassMeetingController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<Void> saveFrequency(
             @PathVariable Integer id,
-            @Valid @RequestBody FrequencyRequest request) {
-        classMeetingService.saveFrequency(id, request);
+            @Valid @RequestBody FrequencyRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        classMeetingService.saveFrequency(id, request, principal);
         return ResponseEntity.noContent().build();
     }
 }

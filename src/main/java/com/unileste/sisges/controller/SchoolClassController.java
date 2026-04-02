@@ -38,10 +38,11 @@ public class SchoolClassController {
     }
 
     @PostMapping("/search")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
     public ResponseEntity<List<SchoolClassSearchResponse>> search(
-            @RequestBody(required = false) SchoolClassSearchRequest request) {
-        List<SchoolClassSearchResponse> classes = schoolClassService.search(request);
+            @RequestBody(required = false) SchoolClassSearchRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        List<SchoolClassSearchResponse> classes = schoolClassService.search(request, principal);
         return ResponseEntity.ok(classes);
     }
 

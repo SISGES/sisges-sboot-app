@@ -37,4 +37,27 @@ public class ClassMeetingSpecification {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
+
+    public static Specification<ClassMeeting> withFiltersAndTeacher(
+            ClassMeetingSearchRequest request,
+            Integer teacherId
+    ) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isNull(root.get("deletedAt")));
+            predicates.add(cb.equal(root.get("teacher").get("id"), teacherId));
+            if (request != null) {
+                if (request.getDate() != null) {
+                    predicates.add(cb.equal(root.get("meetingDate"), request.getDate()));
+                }
+                if (request.getDisciplineId() != null) {
+                    predicates.add(cb.equal(root.get("discipline").get("id"), request.getDisciplineId()));
+                }
+                if (request.getClassId() != null) {
+                    predicates.add(cb.equal(root.get("schoolClass").get("id"), request.getClassId()));
+                }
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 }

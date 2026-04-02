@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
@@ -59,6 +60,7 @@ public class DevDataSeedRunner implements ApplicationRunner {
     private final AnnouncementRepository announcementRepository;
     private final AnnouncementCommentRepository announcementCommentRepository;
     private final AnnouncementLikeRepository announcementLikeRepository;
+    private final AttendanceRepository attendanceRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
 
@@ -183,6 +185,7 @@ public class DevDataSeedRunner implements ApplicationRunner {
                 LocalDate.of(2026, 3, 4)
         };
         int di = 0;
+        List<ClassMeeting> savedMeetings = new ArrayList<>();
         for (SchoolClass sc : classes) {
             for (LocalDate md : meetingDates) {
                 Discipline d = disciplines.get(di % disciplines.size());
@@ -195,14 +198,32 @@ public class DevDataSeedRunner implements ApplicationRunner {
                         .startTime(LocalTime.of(8, 0))
                         .endTime(LocalTime.of(9, 0))
                         .build();
-                classMeetingRepository.save(cm);
+                savedMeetings.add(classMeetingRepository.save(cm));
                 di++;
             }
         }
 
+        seedAttendance(savedMeetings);
         seedAnnouncements(admin, teachers, studentUsers);
 
-        log.info("SISGES homologation seed: finished (users, turmas, disciplinas, aulas, avisos, comentários, curtidas)");
+        log.info("SISGES homologation seed: finished (users, turmas, disciplinas, aulas, frequência, avisos, comentários, curtidas)");
+    }
+
+    private void seedAttendance(List<ClassMeeting> meetings) {
+        Random rnd = new Random(42);
+        for (ClassMeeting cm : meetings) {
+            Integer classId = cm.getSchoolClass().getId();
+            List<Student> classStudents = studentRepository.findByCurrentClass_IdAndDeletedAtIsNull(classId);
+            for (Student st : classStudents) {
+                double baseRate = 0.72 + rnd.nextDouble() * 0.22;
+                boolean present = rnd.nextDouble() < baseRate;
+                attendanceRepository.save(Attendance.builder()
+                        .classMeeting(cm)
+                        .student(st)
+                        .present(present)
+                        .build());
+            }
+        }
     }
 
     private void seedAnnouncements(User admin, List<Teacher> teachers, List<User> studentUsers) {
@@ -318,48 +339,69 @@ public class DevDataSeedRunner implements ApplicationRunner {
                     sp.announcement().getId());
         }
 
-        String[][] commentTexts = {
-                {"Concordo, vou ajustar minha agenda.", "Ótima iniciativa, obrigado pelo aviso."},
-                {"Vou comparecer com meus pais.", "Há vaga para acompanhante?"},
-                {"Finalmente um horário que ajuda!", "Posso renovar o empréstimo online?"},
-                {"Minha turma já está montando o estande.", "Há limite de inscrições por turma?"},
-                {"Time do 2º ano vai com tudo!", "Horário confirmado no mural?"},
-                {"Adorei a exposição do ano passado.", "Entrada gratuita mesmo?"},
-                {"Vou levar o cartão atualizado esta semana.", "A enfermaria faz a conferência?"},
-                {"Consegui acessar pelo guia, valeu.", "O link do portal mudou?"},
-                {"Moro perto do novo ponto, ótimo.", "A volta no fim da tarde também muda?"},
-                {"Já separei a lista de desejos.", "Aceita PIX na feira?"},
-                {"Sempre uso o crachá na entrada.", "Visitante precisa agendar antes?"}
-        };
+        List<String> commentPool = List.of(
+                "Concordo, vou ajustar minha agenda.",
+                "Ótima iniciativa, obrigado pelo aviso.",
+                "Vou comparecer com meus pais.",
+                "Há vaga para acompanhante?",
+                "Finalmente um horário que ajuda!",
+                "Posso renovar o empréstimo online?",
+                "Minha turma já está montando o estande.",
+                "Há limite de inscrições por turma?",
+                "Time do 2º ano vai com tudo!",
+                "Horário confirmado no mural?",
+                "Adorei a exposição do ano passado.",
+                "Entrada gratuita mesmo?",
+                "Vou levar o cartão atualizado esta semana.",
+                "A enfermaria faz a conferência?",
+                "Consegui acessar pelo guia, valeu.",
+                "O link do portal mudou?",
+                "Moro perto do novo ponto, ótimo.",
+                "A volta no fim da tarde também muda?",
+                "Já separei a lista de desejos.",
+                "Aceita PIX na feira?",
+                "Sempre uso o crachá na entrada.",
+                "Visitante precisa agendar antes?",
+                "Importante, vou repassar em casa.",
+                "Alguma mudança de última hora?",
+                "Parabéns pela organização!",
+                "Recebi o e-mail, obrigado.",
+                "Dúvida: vale para todos os turnos?",
+                "Confirmado aqui.",
+                "Excelente comunicação."
+        );
+
+        int[] commentsPerPost = {0, 2, 1, 4, 3, 2, 1, 5, 0, 6, 3};
+        Random rndLikes = new Random(991);
+        Random rndComments = new Random(773);
 
         for (int p = 0; p < posts.size(); p++) {
             SavedPost sp = posts.get(p);
             Announcement a = sp.announcement();
-            int cIdx = Math.min(p, commentTexts.length - 1);
-            int u0 = 5 + p * 3;
-            int u1 = 12 + p * 7;
-            User author0 = studentUsers.get(u0 % studentUsers.size());
-            User author1 = studentUsers.get(u1 % studentUsers.size());
-            AnnouncementComment c1 = announcementCommentRepository.save(AnnouncementComment.builder()
-                    .announcement(a)
-                    .user(author0)
-                    .content(commentTexts[cIdx][0])
-                    .build());
-            AnnouncementComment c2 = announcementCommentRepository.save(AnnouncementComment.builder()
-                    .announcement(a)
-                    .user(author1)
-                    .content(commentTexts[cIdx][1])
-                    .build());
             LocalDateTime ac = sp.baseTime().plusHours(sp.slot() * 4L + 1);
-            jdbcTemplate.update("UPDATE sisges.announcement_comment SET created_at = ? WHERE id = ?",
-                    Timestamp.valueOf(ac), c1.getId());
-            jdbcTemplate.update("UPDATE sisges.announcement_comment SET created_at = ? WHERE id = ?",
-                    Timestamp.valueOf(ac.plusMinutes(20)), c2.getId());
 
-            int likeStart = p * 11;
-            int likeCount = 8 + (p % 7);
-            for (int k = 0; k < likeCount; k++) {
-                User liker = studentUsers.get((likeStart + k) % studentUsers.size());
+            int nComments = commentsPerPost[p];
+            for (int c = 0; c < nComments; c++) {
+                int uIdx = (p * 19 + c * 41 + rndComments.nextInt(7)) % studentUsers.size();
+                User author = studentUsers.get(uIdx);
+                String text = commentPool.get((p * 11 + c * 17) % commentPool.size());
+                AnnouncementComment comment = announcementCommentRepository.save(AnnouncementComment.builder()
+                        .announcement(a)
+                        .user(author)
+                        .content(text)
+                        .build());
+                jdbcTemplate.update("UPDATE sisges.announcement_comment SET created_at = ? WHERE id = ?",
+                        Timestamp.valueOf(ac.plusMinutes(3L * c)), comment.getId());
+            }
+
+            int likeTarget = 5 + rndLikes.nextInt(78);
+            int stride = 1 + rndLikes.nextInt(11);
+            int added = 0;
+            int k = 0;
+            while (added < likeTarget && k < studentUsers.size() * 3) {
+                int idx = (p * 97 + k * stride) % studentUsers.size();
+                k++;
+                User liker = studentUsers.get(idx);
                 if (announcementLikeRepository.existsByAnnouncementIdAndUserId(a.getId(), liker.getId())) {
                     continue;
                 }
@@ -368,9 +410,10 @@ public class DevDataSeedRunner implements ApplicationRunner {
                         .user(liker)
                         .build());
                 jdbcTemplate.update("UPDATE sisges.announcement_like SET created_at = ? WHERE id = ?",
-                        Timestamp.valueOf(ac.plusMinutes(30 + k)), like.getId());
+                        Timestamp.valueOf(ac.plusMinutes(15 + added)), like.getId());
+                added++;
             }
-            if (p % 3 == 0) {
+            if (p % 4 != 2) {
                 User tLiker = teachers.get(p % teachers.size()).getBaseData();
                 if (!announcementLikeRepository.existsByAnnouncementIdAndUserId(a.getId(), tLiker.getId())) {
                     AnnouncementLike lk = announcementLikeRepository.save(AnnouncementLike.builder()
@@ -378,7 +421,7 @@ public class DevDataSeedRunner implements ApplicationRunner {
                             .user(tLiker)
                             .build());
                     jdbcTemplate.update("UPDATE sisges.announcement_like SET created_at = ? WHERE id = ?",
-                            Timestamp.valueOf(ac.plusMinutes(45)), lk.getId());
+                            Timestamp.valueOf(ac.plusMinutes(50)), lk.getId());
                 }
             }
         }
