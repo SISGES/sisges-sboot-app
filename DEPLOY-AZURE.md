@@ -55,14 +55,31 @@ Defina antes de rodar o script:
 
 - `SISGES_AZURE_RG` – Resource group (padrão: sisges-rg)
 - `SISGES_AZURE_LOCATION` – Região (padrão: brazilsouth)
-- `SISGES_AZURE_APP` – Nome do app (padrão: sisges-api)
+- `SISGES_AZURE_APP` – Nome do app (padrão: sisges-backend-fubpacfwgjh5f8cg)
 - `SISGES_AZURE_PLAN` – App Service Plan (padrão: sisges-plan)
 
-## URL após deploy
+## URL após deploy (produção)
 
-- **App**: https://sisges-api.azurewebsites.net
-- **API**: https://sisges-api.azurewebsites.net/api
-- **Swagger**: https://sisges-api.azurewebsites.net/swagger-ui.html
+- **App**: https://sisges-backend-fubpacfwgjh5f8cg.brazilsouth-01.azurewebsites.net
+- **API**: https://sisges-backend-fubpacfwgjh5f8cg.brazilsouth-01.azurewebsites.net/api
+- **Swagger**: https://sisges-backend-fubpacfwgjh5f8cg.brazilsouth-01.azurewebsites.net/swagger-ui.html
+
+## Deploy manual (se o script falhar)
+
+**1. Aumentar timeout de startup (obrigatório se o app demorar a subir):**
+```powershell
+az webapp config appsettings set --resource-group sisges-rg --name sisges-backend-fubpacfwgjh5f8cg --settings "WEBSITES_CONTAINER_START_TIME_LIMIT=600" --output none
+```
+
+**2. Build e deploy:**
+```powershell
+cd sisges-sboot-app
+.\mvnw.cmd package -DskipTests -q
+$jar = (Get-ChildItem target -Filter "*.jar" | Where-Object { $_.Name -notmatch "original" })[0].FullName
+az webapp deploy --resource-group sisges-rg --name sisges-backend-fubpacfwgjh5f8cg --src-path $jar --type jar
+```
+
+**Importante:** No portal Azure, confira o app **sisges-backend-fubpacfwgjh5f8cg** (não sisges-api) para ver o histórico de deploy.
 
 ## CORS
 

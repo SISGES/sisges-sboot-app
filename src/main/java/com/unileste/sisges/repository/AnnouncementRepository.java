@@ -23,5 +23,14 @@ public interface AnnouncementRepository extends JpaRepository<Announcement, Inte
         """)
     List<Announcement> findActiveForRole(@Param("role") String role, @Param("now") LocalDateTime now);
 
+    @Query("""
+        SELECT a FROM Announcement a
+        WHERE a.deletedAt IS NULL
+        AND (a.activeFrom IS NULL OR a.activeFrom <= :now)
+        AND (a.activeUntil IS NULL OR a.activeUntil >= :now)
+        ORDER BY a.createdAt DESC
+        """)
+    List<Announcement> findActive(@Param("now") LocalDateTime now);
+
     List<Announcement> findAllByDeletedAtIsNullOrderByCreatedAtDesc();
 }

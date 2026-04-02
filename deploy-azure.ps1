@@ -6,7 +6,8 @@ $ErrorActionPreference = "Stop"
 # Configuração - ajuste conforme necessário
 $RESOURCE_GROUP = if ($env:SISGES_AZURE_RG) { $env:SISGES_AZURE_RG } else { "sisges-rg" }
 $LOCATION = if ($env:SISGES_AZURE_LOCATION) { $env:SISGES_AZURE_LOCATION } else { "brazilsouth" }
-$APP_NAME = if ($env:SISGES_AZURE_APP) { $env:SISGES_AZURE_APP } else { "sisges-api" }
+# PRD: sisges-backend-fubpacfwgjh5f8cg | dev: sisges-api
+$APP_NAME = if ($env:SISGES_AZURE_APP) { $env:SISGES_AZURE_APP } else { "sisges-backend-fubpacfwgjh5f8cg" }
 $APP_SERVICE_PLAN = if ($env:SISGES_AZURE_PLAN) { $env:SISGES_AZURE_PLAN } else { "sisges-plan" }
 
 Write-Host "=== Build do JAR ===" -ForegroundColor Cyan
@@ -32,12 +33,15 @@ Write-Host "=== Configurando variáveis de ambiente ===" -ForegroundColor Cyan
 $connStr = if ($env:AZURE_STORAGE_CONNECTION_STRING) { $env:AZURE_STORAGE_CONNECTION_STRING } else { "" }
 $jwtSecret = if ($env:SECURITY_JWT_SECRET_KEY) { $env:SECURITY_JWT_SECRET_KEY } else { "altere-em-producao-min-32-chars" }
 
+$debugErrors = if ($env:SISGES_DEBUG_ERRORS) { $env:SISGES_DEBUG_ERRORS } else { "false" }
 $null = az webapp config appsettings set --resource-group $RESOURCE_GROUP --name $APP_NAME --settings `
     "SPRING_PROFILES_ACTIVE=prod" `
     "SECURITY_JWT_SECRET_KEY=$jwtSecret" `
     "AZURE_STORAGE_CONNECTION_STRING=$connStr" `
     "AZURE_STORAGE_CONTAINER=sisgesfiles" `
     "WEBSITES_PORT=8080" `
+    "WEBSITES_CONTAINER_START_TIME_LIMIT=600" `
+    "SISGES_DEBUG_ERRORS=$debugErrors" `
     --output none 2>&1
 
 if ($env:SPRING_DATASOURCE_URL) {

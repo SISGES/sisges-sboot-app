@@ -30,18 +30,10 @@ public class AnnouncementController {
 
     @GetMapping("/feed")
     public ResponseEntity<List<AnnouncementResponse>> getFeed(@AuthenticationPrincipal UserPrincipal principal) {
-        try {
-            String role = principal != null ? principal.getRole() : "STUDENT";
-            Integer currentUserId = principal != null ? principal.getId() : null;
-            List<AnnouncementResponse> feed = announcementService.findActiveForRole(role, currentUserId);
-            return ResponseEntity.ok(feed);
-        } catch (Exception e) {
-            log.error("Erro no feed de anúncios (role={}, userId={}): {}",
-                    principal != null ? principal.getRole() : "anon",
-                    principal != null ? principal.getId() : null,
-                    e.getMessage(), e);
-            throw e;
-        }
+        String role = principal != null ? principal.getRole() : "STUDENT";
+        Integer currentUserId = principal != null ? principal.getId() : null;
+        List<AnnouncementResponse> feed = announcementService.findActiveForRole(role, currentUserId);
+        return ResponseEntity.ok(feed);
     }
 
     @GetMapping

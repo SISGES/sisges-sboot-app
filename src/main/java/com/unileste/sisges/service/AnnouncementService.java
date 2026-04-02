@@ -8,6 +8,8 @@ import com.unileste.sisges.model.User;
 import com.unileste.sisges.repository.AnnouncementRepository;
 import com.unileste.sisges.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +21,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AnnouncementService {
 
+    private static final Logger log = LoggerFactory.getLogger(AnnouncementService.class);
+
     private final AnnouncementRepository announcementRepository;
     private final UserRepository userRepository;
     private final AnnouncementLikeService announcementLikeService;
@@ -27,7 +31,16 @@ public class AnnouncementService {
     @Transactional(readOnly = true)
     public List<AnnouncementResponse> findActiveForRole(String role, Integer currentUserId) {
         LocalDateTime now = LocalDateTime.now();
-        return announcementRepository.findActiveForRole(role, now).stream()
+        List<Announcement> announcements;
+        try {
+            announcements = announcementRepository.findActiveForRole(role, now);
+        } catch (Exception e) {
+            log.warn("findActiveForRole falhou (coluna hidden_for_roles pode não existir), usando fallback: {}", e.getMessage());
+            announcements = announcementRepository.findActive(now).stream()
+                    .filter(a -> !a.getHiddenForRolesList().contains(role))
+                    .collect(Collectors.toList());
+        }
+        return announcements.stream()
                 .map(a -> toResponse(a, currentUserId))
                 .collect(Collectors.toList());
     }
@@ -106,9 +119,9 @@ public class AnnouncementService {
     }
 
     private AnnouncementResponse toResponse(Announcement a, Integer currentUserId) {
-        long likeCount = announcementLikeService.countLikes(a.getId());
-        boolean likedByCurrentUser = announcementLikeService.isLikedByUser(a.getId(), currentUserId);
-        long commentCount = announcementCommentService.countComments(a.getId());
+        long likeCount = safeCountLikes(a.getId());
+        boolean likedByCurrentUser = safeIsLikedByUser(a.getId(), currentUserId);
+        long commentCount = safeCountComments(a.getId());
 
         return AnnouncementResponse.builder()
                 .id(a.getId())
@@ -125,5 +138,32 @@ public class AnnouncementService {
                 .likedByCurrentUser(likedByCurrentUser)
                 .commentCount(commentCount)
                 .build();
+    }
+
+    private long safeCountLikes(Integer announcementId) {
+        try {
+            return announcementLikeService.countLikes(announcementId);
+        } catch (Exception e) {
+            log.warn("Erro ao contar likes do anúncio {}: {}", announcementId, e.getMessage());
+            return 0;
+        }
+    }
+
+    private boolean safeIsLikedByUser(Integer announcementId, Integer userId) {
+        try {
+            return announcementLikeService.isLikedByUser(announcementId, userId);
+        } catch (Exception e) {
+            log.warn("Erro ao verificar like do usuário {} no anúncio {}: {}", userId, announcementId, e.getMessage());
+            return false;
+        }
+    }
+
+    private long safeCountComments(Integer announcementId) {
+        try {
+            return announcementCommentService.countComments(announcementId);
+        } catch (Exception e) {
+            log.warn("Erro ao contar comentários do anúncio {}: {}", announcementId, e.getMessage());
+            return 0;
+        }
     }
 }
