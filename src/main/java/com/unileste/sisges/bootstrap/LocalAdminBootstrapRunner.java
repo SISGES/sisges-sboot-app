@@ -15,10 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
-/**
- * Cria o usuário administrador local (email/senha fixos) quando habilitado.
- * Idempotente: não altera a conta se o email já existir.
- */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE - 1)
 @ConditionalOnProperty(name = "sisges.local-admin.enabled", havingValue = "true")

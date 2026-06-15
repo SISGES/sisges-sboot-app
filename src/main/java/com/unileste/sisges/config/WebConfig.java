@@ -18,14 +18,16 @@ public class WebConfig {
                 "http://localhost:*",
                 "http://127.0.0.1:*",
                 "http://[::1]:*",
-                "https://*.vercel.app"
+                "https://*.vercel.app",
+                "https://sisges.hugodefreitas.com.br"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setExposedHeaders(List.of("*"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
+        source.registerCorsConfiguration("/api/**", config);
+        source.registerCorsConfiguration("/ws/**", config);
 
         return source;
     }
