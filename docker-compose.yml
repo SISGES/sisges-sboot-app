@@ -54,6 +54,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SECURITY_JWT_SECRET_KEY: docker-compose-dev-secret-min-32-chars-xx
+      SISGES_CORS_ALLOWED_ORIGIN_PATTERNS: http://localhost:3001,http://127.0.0.1:3001
       SISGES_MINIO_ENDPOINT: http://sisges-minio:9000
       SISGES_MINIO_ACCESS_KEY: minioadmin
       SISGES_MINIO_SECRET_KEY: minioadmin
