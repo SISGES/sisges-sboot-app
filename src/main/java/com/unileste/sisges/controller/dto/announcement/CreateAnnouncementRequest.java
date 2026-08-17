@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.unileste.sisges.validation.AllowedAnnouncementTtl;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,4 +38,7 @@ public class CreateAnnouncementRequest {
 
     private LocalDateTime activeFrom;
     private LocalDateTime activeUntil;
+
+    @AllowedAnnouncementTtl
+    private Integer ttlHours;
 }

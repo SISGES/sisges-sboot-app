@@ -18,9 +18,17 @@ public class GradingConfigService {
     private final GradingConfigRepository repository;
 
     @Transactional(readOnly = true)
+    public GradingConfig getCurrentEntity() {
+        return repository.findFirstByOrderByIdAsc().orElseGet(this::buildDefault);
+    }
+
+    public BigDecimal fixedApprovalPercentage() {
+        return AcademicCycleService.FIXED_APPROVAL_PERCENTAGE;
+    }
+
+    @Transactional(readOnly = true)
     public GradingConfigResponse get() {
-        GradingConfig cfg = repository.findFirstByOrderByIdAsc()
-                .orElseGet(this::buildDefault);
+        GradingConfig cfg = getCurrentEntity();
         return toResponse(cfg);
     }
 

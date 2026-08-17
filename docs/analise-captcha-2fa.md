@@ -24,18 +24,19 @@ CAPTCHA (Completely Automated Public Turing test to tell Computers and Humans Ap
 
 ### 2.2 Opções Disponíveis
 
-| Solução             | Prós                                                | Contras                                    | Custo       |
-|---------------------|-----------------------------------------------------|--------------------------------------------|-------------|
-| **Google reCAPTCHA v3** | Invisível, sem fricção para o usuário, score-based | Depende do Google, privacidade             | Gratuito*   |
-| **Google reCAPTCHA v2** | Amplamente conhecido ("Não sou um robô")           | Fricção para o usuário                     | Gratuito*   |
-| **hCaptcha**        | Alternativa ao Google, mais privacidade              | Menos popular no Brasil                    | Gratuito*   |
-| **Turnstile (Cloudflare)** | Invisível, boa privacidade, rápido             | Menor ecossistema                          | Gratuito    |
+| Solução                    | Prós                                               | Contras                        | Custo      |
+| -------------------------- | -------------------------------------------------- | ------------------------------ | ---------- |
+| **Google reCAPTCHA v3**    | Invisível, sem fricção para o usuário, score-based | Depende do Google, privacidade | Gratuito\* |
+| **Google reCAPTCHA v2**    | Amplamente conhecido ("Não sou um robô")           | Fricção para o usuário         | Gratuito\* |
+| **hCaptcha**               | Alternativa ao Google, mais privacidade            | Menos popular no Brasil        | Gratuito\* |
+| **Turnstile (Cloudflare)** | Invisível, boa privacidade, rápido                 | Menor ecossistema              | Gratuito   |
 
-> *Gratuito até determinado volume de requisições.
+> \*Gratuito até determinado volume de requisições.
 
 ### 2.3 Recomendação: Google reCAPTCHA v3
 
 Para o SISGES, o reCAPTCHA v3 é a melhor opção porque:
+
 - **Invisível:** Não adiciona fricção para professores e responsáveis
 - **Score-based:** Retorna um score de 0.0 a 1.0 (ex: acima de 0.5 é humano)
 - **Amplamente suportado:** Boa documentação e SDKs
@@ -69,6 +70,7 @@ Para o SISGES, o reCAPTCHA v3 é a melhor opção porque:
    - Usar `RestTemplate` ou `WebClient` para chamar a API do Google
 
 2. **Criar propriedades de configuração:**
+
    ```properties
    # application.properties
    recaptcha.secret-key=${RECAPTCHA_SECRET_KEY}
@@ -82,6 +84,7 @@ Para o SISGES, o reCAPTCHA v3 é a melhor opção porque:
    - Retorna `true/false` com base no score
 
 4. **Alterar `LoginRequest`** para incluir o campo `captchaToken`:
+
    ```java
    private String captchaToken;
    ```
@@ -114,16 +117,17 @@ Para o SISGES, o reCAPTCHA v3 é a melhor opção porque:
 
 ### 3.2 Opções Disponíveis
 
-| Método                    | Prós                                           | Contras                                          | Custo         |
-|---------------------------|-------------------------------------------------|--------------------------------------------------|---------------|
-| **TOTP (Google Auth)**    | Offline, seguro, sem custo recorrente           | Requer app no celular, setup mais complexo       | Gratuito      |
-| **OTP por E-mail**        | Simples, não requer app extra                   | Depende do servidor de e-mail, menos seguro      | Custo de SMTP |
-| **OTP por SMS**           | Familiar para o usuário                         | Custo por SMS, menos seguro (SIM swap)           | Caro          |
-| **Push Notification**     | UX excelente                                    | Complexo, requer app mobile                      | Complexo      |
+| Método                 | Prós                                  | Contras                                     | Custo         |
+| ---------------------- | ------------------------------------- | ------------------------------------------- | ------------- |
+| **TOTP (Google Auth)** | Offline, seguro, sem custo recorrente | Requer app no celular, setup mais complexo  | Gratuito      |
+| **OTP por E-mail**     | Simples, não requer app extra         | Depende do servidor de e-mail, menos seguro | Custo de SMTP |
+| **OTP por SMS**        | Familiar para o usuário               | Custo por SMS, menos seguro (SIM swap)      | Caro          |
+| **Push Notification**  | UX excelente                          | Complexo, requer app mobile                 | Complexo      |
 
 ### 3.3 Recomendação: TOTP (Time-based One-Time Password)
 
 Para o SISGES, o **TOTP** é a melhor opção porque:
+
 - **Gratuito:** Sem custos recorrentes (sem SMS, sem serviço de e-mail)
 - **Seguro:** Códigos gerados offline, baseados em tempo
 - **Padrão aberto:** Funciona com Google Authenticator, Authy, Microsoft Authenticator
@@ -186,6 +190,7 @@ ALTER TABLE sisges.users ADD COLUMN two_factor_secret VARCHAR(64);
 #### Backend (Spring Boot)
 
 1. **Adicionar dependência TOTP** no `pom.xml`:
+
    ```xml
    <dependency>
        <groupId>dev.samstevens.totp</groupId>
@@ -249,15 +254,15 @@ ALTER TABLE sisges.users ADD COLUMN two_factor_secret VARCHAR(64);
 
 ## 4. Comparação e Recomendação
 
-| Aspecto               | CAPTCHA (reCAPTCHA v3)          | 2FA (TOTP)                          |
-|------------------------|---------------------------------|-------------------------------------|
-| **Protege contra**     | Bots, brute force automatizado  | Roubo de credenciais, phishing      |
-| **Impacto no UX**      | Nenhum (invisível)              | Médio (passo extra no login)        |
-| **Complexidade**       | Baixa                           | Média-alta                          |
-| **Alteração no banco** | Nenhuma                         | 2 colunas na tabela `users`         |
-| **Dependência externa**| Google reCAPTCHA API             | Nenhuma (lib local)                 |
-| **Estimativa**         | 2-4 horas                       | 8-16 horas                          |
-| **Prioridade**         | **Alta** (risco imediato)       | Média (melhoria de segurança)       |
+| Aspecto                 | CAPTCHA (reCAPTCHA v3)         | 2FA (TOTP)                     |
+| ----------------------- | ------------------------------ | ------------------------------ |
+| **Protege contra**      | Bots, brute force automatizado | Roubo de credenciais, phishing |
+| **Impacto no UX**       | Nenhum (invisível)             | Médio (passo extra no login)   |
+| **Complexidade**        | Baixa                          | Média-alta                     |
+| **Alteração no banco**  | Nenhuma                        | 2 colunas na tabela `users`    |
+| **Dependência externa** | Google reCAPTCHA API           | Nenhuma (lib local)            |
+| **Estimativa**          | 2-4 horas                      | 8-16 horas                     |
+| **Prioridade**          | **Alta** (risco imediato)      | Média (melhoria de segurança)  |
 
 ### Recomendação de implementação
 

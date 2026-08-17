@@ -28,6 +28,7 @@ public class AnnouncementService {
     private final AnnouncementLikeService announcementLikeService;
     private final AnnouncementCommentService announcementCommentService;
     private final FeedNotificationService feedNotificationService;
+    private final StorageService storageService;
 
     @Transactional(readOnly = true)
     public List<AnnouncementResponse> findActiveForRole(String role, Integer currentUserId) {
@@ -70,14 +71,21 @@ public class AnnouncementService {
                 ? String.join(",", request.getHiddenForRoles())
                 : null;
 
+        LocalDateTime activeFrom = request.getActiveFrom() != null
+                ? request.getActiveFrom()
+                : LocalDateTime.now();
+        LocalDateTime activeUntil = request.getTtlHours() != null
+                ? activeFrom.plusHours(request.getTtlHours())
+                : request.getActiveUntil();
+
         Announcement announcement = Announcement.builder()
                 .title(request.getTitle())
                 .content(request.getContent())
                 .type(request.getType())
                 .imagePath(request.getImagePath())
                 .hiddenForRoles(hiddenForRolesStr)
-                .activeFrom(request.getActiveFrom())
-                .activeUntil(request.getActiveUntil())
+                .activeFrom(activeFrom)
+                .activeUntil(activeUntil)
                 .createdBy(createdBy)
                 .build();
 
@@ -117,9 +125,20 @@ public class AnnouncementService {
     public void delete(Integer id) {
         Announcement a = announcementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Anúncio não encontrado"));
-        a.setDeletedAt(LocalDateTime.now());
-        announcementRepository.save(a);
+        storageService.delete(a.getImagePath());
+        announcementRepository.delete(a);
         feedNotificationService.broadcast("ANNOUNCEMENT_DELETED", id);
+    }
+
+    @Transactional
+    public void purgeExpiredAnnouncements() {
+        List<Announcement> expired = announcementRepository
+                .findByDeletedAtIsNullAndActiveUntilBefore(LocalDateTime.now());
+        expired.forEach(a -> {
+            storageService.delete(a.getImagePath());
+            announcementRepository.delete(a);
+            feedNotificationService.broadcast("ANNOUNCEMENT_DELETED", a.getId());
+        });
     }
 
     private AnnouncementResponse toResponse(Announcement a, Integer currentUserId) {

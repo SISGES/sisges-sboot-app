@@ -13,4 +13,6 @@ public interface StudentRepository extends JpaRepository<Student, Integer>, JpaS
     Optional<Student> findByBaseData_IdAndDeletedAtIsNull(Integer baseDataId);
 
     List<Student> findByCurrentClass_IdAndDeletedAtIsNull(Integer schoolClassId);
+
+    List<Student> findByCurrentClassIsNotNullAndDeletedAtIsNull();
 }
