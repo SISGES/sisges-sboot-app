@@ -27,4 +27,7 @@ public class AnnouncementResponse {
     private long likeCount;
     private boolean likedByCurrentUser;
     private long commentCount;
+    private Integer authorId;
+    private String authorName;
+    private String authorProfileImagePath;
 }

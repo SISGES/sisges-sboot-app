@@ -40,6 +40,9 @@ public class User {
     @Column(name = "user_role", nullable = false, length = 30)
     private String userRole;
 
+    @Column(name = "profile_image_path", length = 500)
+    private String profileImagePath;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

@@ -146,6 +146,7 @@ public class AuthService {
                 .role(user.getUserRole())
                 .birthDate(user.getBirthDate())
                 .gender(user.getGender())
+                .profileImagePath(user.getProfileImagePath())
                 .build();
     }
 }

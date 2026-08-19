@@ -166,6 +166,9 @@ public class AnnouncementService {
                 .likeCount(likeCount)
                 .likedByCurrentUser(likedByCurrentUser)
                 .commentCount(commentCount)
+                .authorId(a.getCreatedBy() != null ? a.getCreatedBy().getId() : null)
+                .authorName(a.getCreatedBy() != null ? a.getCreatedBy().getName() : null)
+                .authorProfileImagePath(a.getCreatedBy() != null ? a.getCreatedBy().getProfileImagePath() : null)
                 .build();
     }
 

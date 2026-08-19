@@ -12,7 +12,7 @@ public final class StoredPathUtils {
         if (storedPath == null || storedPath.isBlank()) {
             return null;
         }
-        for (String prefix : new String[] {"announcements/", "materials/", "activities/", "general/"}) {
+        for (String prefix : new String[] {"announcements/", "profiles/", "materials/", "activities/", "general/"}) {
             int idx = storedPath.indexOf(prefix);
             if (idx >= 0) {
                 return normalizeStorageKey(storedPath.substring(idx));
