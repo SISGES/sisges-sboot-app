@@ -16,6 +16,38 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class UpdateGradingConfigRequest {
 
+    public UpdateGradingConfigRequest(
+            Integer trimester1MaxPoints,
+            Integer trimester2MaxPoints,
+            Integer trimester3MaxPoints,
+            Integer trimester1PointsProvas,
+            Integer trimester1PointsAtividades,
+            Integer trimester1PointsTrabalhos,
+            Integer trimester2PointsProvas,
+            Integer trimester2PointsAtividades,
+            Integer trimester2PointsTrabalhos,
+            Integer trimester3PointsProvas,
+            Integer trimester3PointsAtividades,
+            Integer trimester3PointsTrabalhos) {
+        this.yearMaxPoints = trimester1MaxPoints + trimester2MaxPoints + trimester3MaxPoints;
+        this.yearMinPercentage = new BigDecimal("70.00");
+        this.trimester1MaxPoints = trimester1MaxPoints;
+        this.trimester1MinPercentage = new BigDecimal("70.00");
+        this.trimester2MaxPoints = trimester2MaxPoints;
+        this.trimester2MinPercentage = new BigDecimal("70.00");
+        this.trimester3MaxPoints = trimester3MaxPoints;
+        this.trimester3MinPercentage = new BigDecimal("70.00");
+        this.trimester1PointsProvas = trimester1PointsProvas;
+        this.trimester1PointsAtividades = trimester1PointsAtividades;
+        this.trimester1PointsTrabalhos = trimester1PointsTrabalhos;
+        this.trimester2PointsProvas = trimester2PointsProvas;
+        this.trimester2PointsAtividades = trimester2PointsAtividades;
+        this.trimester2PointsTrabalhos = trimester2PointsTrabalhos;
+        this.trimester3PointsProvas = trimester3PointsProvas;
+        this.trimester3PointsAtividades = trimester3PointsAtividades;
+        this.trimester3PointsTrabalhos = trimester3PointsTrabalhos;
+    }
+
     @NotNull @Min(10) @Max(1000)
     private Integer yearMaxPoints;
 

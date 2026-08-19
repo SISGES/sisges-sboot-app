@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 
 @Data
 @Builder
@@ -18,5 +19,10 @@ public class EvaluativeActivityResponse {
     private String title;
     private String description;
     private String filePath;
+    private String activityType;
+    private Integer trimesterNumber;
+    private BigDecimal maxPoints;
+    private boolean released;
+    private LocalDateTime releasedAt;
     private LocalDateTime createdAt;
 }

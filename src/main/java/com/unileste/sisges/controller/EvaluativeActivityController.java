@@ -2,6 +2,8 @@ package com.unileste.sisges.controller;
 
 import com.unileste.sisges.controller.dto.activity.CreateEvaluativeActivityRequest;
 import com.unileste.sisges.controller.dto.activity.EvaluativeActivityResponse;
+import com.unileste.sisges.controller.dto.activity.ActivityGradebookResponse;
+import com.unileste.sisges.controller.dto.activity.FillActivityGradesRequest;
 import com.unileste.sisges.security.UserPrincipal;
 import com.unileste.sisges.service.EvaluativeActivityService;
 import jakarta.validation.Valid;
@@ -42,6 +44,31 @@ public class EvaluativeActivityController {
             @AuthenticationPrincipal UserPrincipal principal) {
         EvaluativeActivityResponse response = activityService.create(request, principal.getId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/{id}/gradebook")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
+    public ResponseEntity<ActivityGradebookResponse> gradebook(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(activityService.getGradebook(id, principal.getId()));
+    }
+
+    @PutMapping("/{id}/grades")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
+    public ResponseEntity<ActivityGradebookResponse> saveGrades(
+            @PathVariable Integer id,
+            @Valid @RequestBody FillActivityGradesRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(activityService.saveGrades(id, request, principal.getId()));
+    }
+
+    @PostMapping("/{id}/release")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('TEACHER')")
+    public ResponseEntity<EvaluativeActivityResponse> release(
+            @PathVariable Integer id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(activityService.release(id, principal.getId()));
     }
 
     @DeleteMapping("/{id}")

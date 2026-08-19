@@ -88,6 +88,10 @@ public class DevDataSeedRunner implements ApplicationRunner {
     private final AnnouncementCommentRepository announcementCommentRepository;
     private final AnnouncementLikeRepository announcementLikeRepository;
     private final AttendanceRepository attendanceRepository;
+    private final DisciplineMaterialRepository disciplineMaterialRepository;
+    private final EvaluativeActivityRepository evaluativeActivityRepository;
+    private final ActivityGradeRepository activityGradeRepository;
+    private final AcademicCycleRepository academicCycleRepository;
     private final JdbcTemplate jdbcTemplate;
     private final PasswordEncoder passwordEncoder;
 
@@ -231,9 +235,92 @@ public class DevDataSeedRunner implements ApplicationRunner {
         }
 
         seedAttendance(savedMeetings);
+        seedAcademicCycle();
+        seedLearningContent(classes, disciplines, teachers, savedMeetings);
         seedAnnouncements(admin, teachers, studentUsers);
 
-        log.info("SISGES homologation seed: finished (users, turmas, disciplinas, aulas, frequência, avisos, comentários, curtidas)");
+        log.info("SISGES homologation seed: finished (users, turmas, disciplinas, aulas, frequência, materiais, atividades, notas e avisos)");
+    }
+
+    private void seedAcademicCycle() {
+        AcademicCycle cycle = academicCycleRepository.findFirstByOrderByIdAsc()
+                .orElseGet(() -> AcademicCycle.builder().build());
+        cycle.setStatus(AcademicCycleStatus.IN_PROGRESS);
+        cycle.setYearStartDate(LocalDate.of(2026, 2, 2));
+        cycle.setYearEndDate(LocalDate.of(2026, 12, 18));
+        cycle.setCurrentTrimester(2);
+        cycle.setGradingLocked(true);
+        cycle.setYearStartedAt(LocalDateTime.of(2026, 2, 2, 7, 0));
+        cycle.setYearFinishedAt(null);
+        academicCycleRepository.save(cycle);
+    }
+
+    private void seedLearningContent(
+            List<SchoolClass> classes,
+            List<Discipline> disciplines,
+            List<Teacher> teachers,
+            List<ClassMeeting> meetings) {
+        for (int classIndex = 0; classIndex < classes.size(); classIndex++) {
+            SchoolClass schoolClass = classes.get(classIndex);
+            for (int materialIndex = 0; materialIndex < 3; materialIndex++) {
+                Discipline discipline = disciplines.get((classIndex + materialIndex) % disciplines.size());
+                Teacher teacher = discipline.getTeachers().isEmpty()
+                        ? teachers.get(0)
+                        : discipline.getTeachers().get(0);
+                disciplineMaterialRepository.save(DisciplineMaterial.builder()
+                        .schoolClass(schoolClass)
+                        .discipline(discipline)
+                        .teacher(teacher)
+                        .title(switch (materialIndex) {
+                            case 0 -> "Guia de estudos — conceitos essenciais";
+                            case 1 -> "Lista de exercícios comentada";
+                            default -> "Roteiro de revisão do trimestre";
+                        })
+                        .description("Material de apoio preparado para " + schoolClass.getName() + ".")
+                        .materialType("TEXT")
+                        .build());
+            }
+        }
+
+        for (int meetingIndex = 0; meetingIndex < meetings.size(); meetingIndex++) {
+            ClassMeeting meeting = meetings.get(meetingIndex);
+            ActivityType type = switch (meetingIndex % 3) {
+                case 0 -> ActivityType.PROVA;
+                case 1 -> ActivityType.ATIVIDADE;
+                default -> ActivityType.TRABALHO;
+            };
+            boolean released = meetingIndex < 6;
+            EvaluativeActivity activity = evaluativeActivityRepository.save(EvaluativeActivity.builder()
+                    .classMeeting(meeting)
+                    .title(switch (type) {
+                        case PROVA -> "Avaliação diagnóstica";
+                        case ATIVIDADE -> "Atividade de consolidação";
+                        case TRABALHO -> "Trabalho em grupo";
+                        default -> "Atividade avaliativa";
+                    })
+                    .description("Conteúdo referente à aula de " + meeting.getDiscipline().getName() + ".")
+                    .activityType(type)
+                    .trimesterNumber(meetingIndex < 3 ? 1 : 2)
+                    .maxPoints(new java.math.BigDecimal("10.00"))
+                    .released(released)
+                    .releasedAt(released ? LocalDateTime.now().minusDays(10 - meetingIndex) : null)
+                    .releasedBy(released && meeting.getTeacher() != null
+                            ? meeting.getTeacher().getBaseData()
+                            : null)
+                    .build());
+
+            List<Student> classStudents = studentRepository
+                    .findByCurrentClass_IdAndDeletedAtIsNull(meeting.getSchoolClass().getId());
+            for (int studentIndex = 0; studentIndex < classStudents.size(); studentIndex++) {
+                java.math.BigDecimal score = java.math.BigDecimal.valueOf(6 + ((meetingIndex + studentIndex) % 5))
+                        .setScale(2);
+                activityGradeRepository.save(ActivityGrade.builder()
+                        .activity(activity)
+                        .student(classStudents.get(studentIndex))
+                        .score(score)
+                        .build());
+            }
+        }
     }
 
     private void seedAttendance(List<ClassMeeting> meetings) {

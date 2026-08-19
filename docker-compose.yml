@@ -13,6 +13,29 @@ services:
       timeout: 5s
       retries: 10
 
+  sisges-minio:
+    image: minio/minio:RELEASE.2025-07-23T15-54-02Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - sisges-minio-data:/data
+
+  sisges-minio-init:
+    image: minio/mc:RELEASE.2025-07-21T05-28-08Z
+    depends_on:
+      - sisges-minio
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://sisges-minio:9000 minioadmin minioadmin; do sleep 2; done &&
+      mc mb --ignore-existing local/sisges-uploads &&
+      mc anonymous set none local/sisges-uploads
+      "
+
   backend:
     build:
       context: .
@@ -20,6 +43,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      sisges-minio:
+        condition: service_started
+      sisges-minio-init:
+        condition: service_completed_successfully
     ports:
       - "8080:8080"
     environment:
@@ -27,10 +54,12 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
       SECURITY_JWT_SECRET_KEY: docker-compose-dev-secret-min-32-chars-xx
-      SISGES_UPLOAD_DIR: /app/uploads
+      SISGES_CORS_ALLOWED_ORIGIN_PATTERNS: http://localhost:3001,http://127.0.0.1:3001
+      SISGES_MINIO_ENDPOINT: http://sisges-minio:9000
+      SISGES_MINIO_ACCESS_KEY: minioadmin
+      SISGES_MINIO_SECRET_KEY: minioadmin
+      SISGES_MINIO_BUCKET: sisges-uploads
       SISGES_SEED_ENABLED: "true"
-    volumes:
-      - sisges-uploads:/app/uploads
 
   frontend:
     build:
@@ -45,4 +74,4 @@ services:
 
 volumes:
   sisges-pgdata:
-  sisges-uploads:
+  sisges-minio-data:

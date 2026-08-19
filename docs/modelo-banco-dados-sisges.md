@@ -81,23 +81,23 @@ As decisões de modelagem foram tomadas para atender a normalização (3FN), ras
 
 ### 2.2 Tabelas resumidas
 
-| Tabela | Descrição |
-|--------|-----------|
-| **users** | Usuários do sistema (admin, professor, aluno). Autenticação e dados comuns. |
-| **student_responsible** | Responsável legal pelo aluno (pai/mãe/tutor). |
-| **student** | Perfil de aluno: vincula user, responsável e turma atual. |
-| **document_type** | Catálogo de tipos de documento (RG, certidão, histórico etc.). |
-| **student_document** | Documentos do aluno (tipo, número, órgão emissor, data); sem armazenamento de arquivo por enquanto. |
-| **teacher** | Perfil de professor: vincula user. |
-| **school_class** | Turma por ano (nome ex.: "1º ano", ano letivo); ensino fundamental e médio, sem período. |
-| **teacher_class** | Associação N:N professor–turma. |
-| **discipline** | Disciplina (nome, descrição). |
-| **class_discipline** | Disciplinas ministradas em cada turma. |
-| **discipline_material** | Materiais da disciplina (título, descrição, tipo); sem arquivo por enquanto. |
-| **lesson** | Lições/aulas teóricas da disciplina (ordem, título, descrição). |
-| **class_meeting** | Ocorrência de aula (turma + disciplina + data). |
-| **attendance** | Frequência: presente/ausente por aluno por aula. |
-| **user_logs** | Log de ações do usuário (user_id, action_id: 0=DELETE, 1=CREATE, 2=UPDATE, 3=LOGIN, 4=LOGOUT). |
+| Tabela                  | Descrição                                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------------- |
+| **users**               | Usuários do sistema (admin, professor, aluno). Autenticação e dados comuns.                         |
+| **student_responsible** | Responsável legal pelo aluno (pai/mãe/tutor).                                                       |
+| **student**             | Perfil de aluno: vincula user, responsável e turma atual.                                           |
+| **document_type**       | Catálogo de tipos de documento (RG, certidão, histórico etc.).                                      |
+| **student_document**    | Documentos do aluno (tipo, número, órgão emissor, data); sem armazenamento de arquivo por enquanto. |
+| **teacher**             | Perfil de professor: vincula user.                                                                  |
+| **school_class**        | Turma por ano (nome ex.: "1º ano", ano letivo); ensino fundamental e médio, sem período.            |
+| **teacher_class**       | Associação N:N professor–turma.                                                                     |
+| **discipline**          | Disciplina (nome, descrição).                                                                       |
+| **class_discipline**    | Disciplinas ministradas em cada turma.                                                              |
+| **discipline_material** | Materiais da disciplina (título, descrição, tipo); sem arquivo por enquanto.                        |
+| **lesson**              | Lições/aulas teóricas da disciplina (ordem, título, descrição).                                     |
+| **class_meeting**       | Ocorrência de aula (turma + disciplina + data).                                                     |
+| **attendance**          | Frequência: presente/ausente por aluno por aula.                                                    |
+| **user_logs**           | Log de ações do usuário (user_id, action_id: 0=DELETE, 1=CREATE, 2=UPDATE, 3=LOGIN, 4=LOGOUT).      |
 
 Todas as tabelas utilizam **soft delete** (`deleted_at`).
 
@@ -156,9 +156,9 @@ Todas as tabelas utilizam **soft delete** (`deleted_at`).
 
 O DDL completo está nas migrations Flyway em `src/main/resources/db/migration/`:
 
-- **V1__create_schema_and_tables.sql** — schema, tabelas principais, FKs e índices.
-- **V2__seed_document_types.sql** — dados iniciais de tipos de documento.
-- **V3__school_class_year_only_soft_delete_user_logs_remove_file_path.sql** — turma só por ano (sem período), soft delete em todas as tabelas, criação de user_logs, remoção de colunas de arquivo (file_path).
+- **V1\_\_create_schema_and_tables.sql** — schema, tabelas principais, FKs e índices.
+- **V2\_\_seed_document_types.sql** — dados iniciais de tipos de documento.
+- **V3\_\_school_class_year_only_soft_delete_user_logs_remove_file_path.sql** — turma só por ano (sem período), soft delete em todas as tabelas, criação de user_logs, remoção de colunas de arquivo (file_path).
 
 As tabelas seguem o modelo descrito na seção 2; chaves primárias são `id` (serial/identity); FKs com `ON DELETE` adequado (ex.: RESTRICT em vínculos críticos, SET NULL em `student.class_id` quando a turma for desativada, conforme regra de negócio).
 
@@ -168,21 +168,21 @@ As tabelas seguem o modelo descrito na seção 2; chaves primárias são `id` (s
 
 As entidades JPA estão em `com.unileste.sisges.model` e espelham o modelo relacional:
 
-| Entidade | Tabela | Descrição |
-|----------|--------|-----------|
-| `User` | users | Usuário do sistema (role: ADMIN, TEACHER, STUDENT). |
-| `StudentResponsible` | student_responsible | Responsável legal pelo aluno. |
-| `DocumentType` | document_type | Catálogo de tipos de documento. |
-| `SchoolClass` | school_class | Turma (nome, ano letivo, período). |
-| `Discipline` | discipline | Disciplina (nome, descrição, materiais e lições). |
-| `Student` | student | Perfil aluno (user, responsável, turma atual). |
-| `StudentDocument` | student_document | Documentos do aluno (tipo, número, arquivo). |
-| `Teacher` | teacher | Perfil professor (user). |
-| `DisciplineMaterial` | discipline_material | Material da disciplina (título, arquivo, tipo). |
-| `Lesson` | lesson | Lição da disciplina (ordem, título, descrição). |
-| `ClassMeeting` | class_meeting | Ocorrência de aula (turma + disciplina + data). |
-| `Attendance` | attendance | Frequência (presente/ausente por aluno por aula). |
-| `UserLog` | user_logs | Log de ações (user_id, action_id conforme enum LogAction). |
+| Entidade             | Tabela              | Descrição                                                  |
+| -------------------- | ------------------- | ---------------------------------------------------------- |
+| `User`               | users               | Usuário do sistema (role: ADMIN, TEACHER, STUDENT).        |
+| `StudentResponsible` | student_responsible | Responsável legal pelo aluno.                              |
+| `DocumentType`       | document_type       | Catálogo de tipos de documento.                            |
+| `SchoolClass`        | school_class        | Turma (nome, ano letivo, período).                         |
+| `Discipline`         | discipline          | Disciplina (nome, descrição, materiais e lições).          |
+| `Student`            | student             | Perfil aluno (user, responsável, turma atual).             |
+| `StudentDocument`    | student_document    | Documentos do aluno (tipo, número, arquivo).               |
+| `Teacher`            | teacher             | Perfil professor (user).                                   |
+| `DisciplineMaterial` | discipline_material | Material da disciplina (título, arquivo, tipo).            |
+| `Lesson`             | lesson              | Lição da disciplina (ordem, título, descrição).            |
+| `ClassMeeting`       | class_meeting       | Ocorrência de aula (turma + disciplina + data).            |
+| `Attendance`         | attendance          | Frequência (presente/ausente por aluno por aula).          |
+| `UserLog`            | user_logs           | Log de ações (user_id, action_id conforme enum LogAction). |
 
 Relacionamentos N:N são mapeados com `@ManyToMany` e `@JoinTable`: `SchoolClass` ↔ `Teacher` (teacher_class), `SchoolClass` ↔ `Discipline` (class_discipline). Use `FetchType.LAZY` nas associações para evitar N+1 e ajuste cascatas conforme as regras de negócio.
 
@@ -199,6 +199,6 @@ Relacionamentos N:N são mapeados com `@ManyToMany` e `@JoinTable`: `SchoolClass
 
 ## 7. Referências (sugestão para TCC)
 
-- Date, C. J. *An Introduction to Database Systems*. 8th ed. Addison-Wesley.
-- Elmasri, R.; Navathe, S. B. *Sistemas de Banco de Dados*. 6. ed. Pearson.
+- Date, C. J. _An Introduction to Database Systems_. 8th ed. Addison-Wesley.
+- Elmasri, R.; Navathe, S. B. _Sistemas de Banco de Dados_. 6. ed. Pearson.
 - Documentação oficial: PostgreSQL, JPA/Hibernate, Flyway (versionamento e boas práticas).

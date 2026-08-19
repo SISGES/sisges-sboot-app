@@ -20,4 +20,5 @@ public class UserResponse {
     private String role;
     private LocalDate birthDate;
     private String gender;
+    private String profileImagePath;
 }
