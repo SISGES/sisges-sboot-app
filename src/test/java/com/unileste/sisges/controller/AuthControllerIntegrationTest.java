@@ -70,7 +70,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
         RegisterUserRequest request = RegisterUserRequest.builder()
                 .name("Novo Professor")
-                .password("secret12")
+                .password("Secret12!")
                 .birthDate(LocalDate.of(1995, 5, 5))
                 .gender("MALE")
                 .role("TEACHER")
@@ -93,7 +93,7 @@ class AuthControllerIntegrationTest extends AbstractIntegrationTest {
 
         RegisterUserRequest request = RegisterUserRequest.builder()
                 .name("Novo Aluno")
-                .password("secret12")
+                .password("Secret12!")
                 .birthDate(LocalDate.of(2010, 1, 1))
                 .gender("FEMALE")
                 .role("STUDENT")

@@ -23,7 +23,8 @@ public class RegisterUserRequest {
     private String name;
 
     @NotBlank(message = "Senha é obrigatória")
-    @Size(min = 6, message = "Senha deve ter no mínimo 6 caracteres")
+    @Size(min = 8, max = 100, message = "Senha deve ter entre 8 e 100 caracteres")
+    @Pattern(regexp = "^(?=.*[A-Z])(?=.*[^A-Za-z0-9]).{8,100}$", message = "Senha deve conter uma letra maiúscula e um símbolo")
     private String password;
 
     @NotNull(message = "Data de nascimento é obrigatória")
