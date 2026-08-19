@@ -64,7 +64,7 @@ public class MinioStorageService implements StorageService {
                     .bucket(properties.getBucket()).object(key).build());
             log.debug("Deleted MinIO object {}/{}", properties.getBucket(), key);
         } catch (Exception exception) {
-            log.warn("Failed to delete MinIO object {}: {}", storedPath, exception.getMessage());
+            throw new IllegalStateException("Could not delete file from MinIO: " + storedPath, exception);
         }
     }
 }

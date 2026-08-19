@@ -125,7 +125,7 @@ public class AnnouncementService {
     public void delete(Integer id) {
         Announcement a = announcementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Anúncio não encontrado"));
-        storageService.delete(a.getImagePath());
+        deleteStoredImage(a);
         announcementRepository.delete(a);
         feedNotificationService.broadcast("ANNOUNCEMENT_DELETED", id);
     }
@@ -135,10 +135,16 @@ public class AnnouncementService {
         List<Announcement> expired = announcementRepository
                 .findByDeletedAtIsNullAndActiveUntilBefore(LocalDateTime.now());
         expired.forEach(a -> {
-            storageService.delete(a.getImagePath());
+            deleteStoredImage(a);
             announcementRepository.delete(a);
             feedNotificationService.broadcast("ANNOUNCEMENT_DELETED", a.getId());
         });
+    }
+
+    private void deleteStoredImage(Announcement announcement) {
+        if (announcement.getImagePath() != null && !announcement.getImagePath().isBlank()) {
+            storageService.delete(announcement.getImagePath());
+        }
     }
 
     private AnnouncementResponse toResponse(Announcement a, Integer currentUserId) {
