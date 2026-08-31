@@ -40,6 +40,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    networks:
+      default:
+        aliases:
+          - sisges-backend
     depends_on:
       db:
         condition: service_healthy
