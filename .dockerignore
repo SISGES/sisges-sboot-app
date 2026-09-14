@@ -1,5 +1,8 @@
-target
 .git
-.gitignore
+.github
 .idea
-*.iml
+.vscode
+docs
+src
+*.log
+tmp

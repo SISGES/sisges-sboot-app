@@ -1,45 +1,24 @@
-HELP.md
-target/
-.mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+# Go build and test output
+/sisges
+*.test
+*.prof
+coverage.out
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### VS Code ###
+# Editors
+.idea/
 .vscode/
-
-### Cursor ###
 .cursor/
 
-### Instructions ###
-INSTRUCTIONS_*.md
-
-### Uploads locais ###
+# Local runtime data
 uploads/
+tmp/
+*.log
 
-### Secrets - nunca commitar ###
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
 application-local.properties
+
+# OS files
+.DS_Store

@@ -1,40 +1,24 @@
-FROM maven:3.9-eclipse-temurin-25 AS build
-WORKDIR /app
-COPY pom.xml .
-COPY src ./src
-RUN mvn -B -DskipTests package
+FROM golang:1.24-alpine AS build
+WORKDIR /src
 
-FROM eclipse-temurin:25-jre-alpine
-WORKDIR /app
-RUN addgroup -S spring && adduser -S spring -G spring
-COPY --from=build /app/target/*.jar app.jar
-USER spring:spring
+COPY go.mod go.sum ./
+RUN go mod download
+COPY cmd ./cmd
+COPY internal ./internal
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -trimpath -ldflags="-s -w -buildid=" \
+    -o /out/sisges ./cmd/sisges
 
-# Production memory profile for a 512 MiB container. Keep the container limit
-# aligned with MaxRAM below (or override JAVA_TOOL_OPTIONS at deployment time).
-# Serial GC has the lowest native overhead for this single-process service.
-ENV JAVA_TOOL_OPTIONS="-XX:+UseSerialGC \
-    -XX:MaxRAM=512m \
-    -Xms32m \
-    -Xmx192m \
-    -Xss512k \
-    -XX:ReservedCodeCacheSize=32m \
-    -XX:MaxDirectMemorySize=32m \
-    -XX:ActiveProcessorCount=2 \
-    -XX:+UseCompactObjectHeaders \
-    -XX:+ExitOnOutOfMemoryError \
-    -Dspring.jmx.enabled=false \
-    -Dspring.jpa.open-in-view=false \
-    -Dserver.tomcat.threads.max=50 \
-    -Dserver.tomcat.threads.min-spare=4 \
-    -Dserver.tomcat.accept-count=50 \
-    -Dspring.datasource.hikari.maximum-pool-size=10 \
-    -Dspring.datasource.hikari.minimum-idle=2"
+FROM scratch
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /out/sisges /sisges
+COPY db/migration /db/migration
 
-# OpenAPI is not needed by production clients and its controller/DTO scan costs
-# memory. Enable explicitly at deployment time if production docs are needed.
-ENV SPRINGDOC_API_DOCS_ENABLED=false \
-    SPRINGDOC_SWAGGER_UI_ENABLED=false
-
+USER 65532:65532
+ENV PORT=8080 \
+    SISGES_MIGRATION_DIR=/db/migration \
+    SISGES_DB_MAX_CONNECTIONS=6 \
+    GOMEMLIMIT_BYTES=167772160 \
+    GOGC_PERCENT=75
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["/sisges"]

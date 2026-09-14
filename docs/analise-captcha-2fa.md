@@ -7,7 +7,7 @@ Documento de análise técnica sobre a implementação de **CAPTCHA** e **Autent
 ## 1. Contexto Atual
 
 - **Autenticação:** Login via e-mail + senha, retornando JWT (stateless)
-- **Segurança:** Spring Security + BCrypt + JWT com HS256
+- **Segurança:** middleware HTTP em Go + BCrypt + JWT com HS256
 - **Perfis:** ADMIN, TEACHER, STUDENT
 - **Vulnerabilidades atuais:**
   - Sem proteção contra ataques de brute force no endpoint `/api/auth/login`
@@ -64,34 +64,33 @@ Para o SISGES, o reCAPTCHA v3 é a melhor opção porque:
 
 ### 2.5 O que Precisaria Ser Feito (CAPTCHA)
 
-#### Backend (Spring Boot)
+#### Backend (Go)
 
-1. **Adicionar dependência HTTP Client** (já disponível via Spring Web):
-   - Usar `RestTemplate` ou `WebClient` para chamar a API do Google
+1. **Usar o cliente HTTP da biblioteca padrão:**
+   - Configurar um `http.Client` com timeout curto para chamar a API do Google
 
 2. **Criar propriedades de configuração:**
 
-   ```properties
-   # application.properties
-   recaptcha.secret-key=${RECAPTCHA_SECRET_KEY}
-   recaptcha.verify-url=https://www.google.com/recaptcha/api/siteverify
-   recaptcha.threshold=0.5
+   ```sh
+   RECAPTCHA_SECRET_KEY=...
+   RECAPTCHA_VERIFY_URL=https://www.google.com/recaptcha/api/siteverify
+   RECAPTCHA_THRESHOLD=0.5
    ```
 
-3. **Criar `RecaptchaService`** para validar o token:
+3. **Criar um serviço `Recaptcha` em Go** para validar o token:
    - Recebe o token do frontend
    - Chama a API do Google para verificar
    - Retorna `true/false` com base no score
 
-4. **Alterar `LoginRequest`** para incluir o campo `captchaToken`:
+4. **Alterar o request de login** para incluir o campo `captchaToken`:
 
-   ```java
-   private String captchaToken;
+   ```go
+   CaptchaToken string `json:"captchaToken"`
    ```
 
-5. **Alterar `AuthService.login()`** para validar o captcha antes de autenticar
+5. **Alterar o handler de login** para validar o captcha antes de autenticar
 
-6. **Criar nova exceção ou usar `BusinessRuleException`** para captcha inválido
+6. **Retornar o envelope `BUSINESS_RULE_VIOLATION`** para captcha inválido
 
 #### Frontend
 
@@ -187,22 +186,14 @@ ALTER TABLE sisges.users ADD COLUMN two_factor_enabled BOOLEAN NOT NULL DEFAULT 
 ALTER TABLE sisges.users ADD COLUMN two_factor_secret VARCHAR(64);
 ```
 
-#### Backend (Spring Boot)
+#### Backend (Go)
 
-1. **Adicionar dependência TOTP** no `pom.xml`:
+1. **Adicionar uma biblioteca TOTP pequena e auditada ao `go.mod`**, ou implementar RFC 6238 com a biblioteca padrão.
 
-   ```xml
-   <dependency>
-       <groupId>dev.samstevens.totp</groupId>
-       <artifactId>totp</artifactId>
-       <version>1.7.1</version>
-   </dependency>
-   ```
-
-2. **Alterar entidade `User`:**
+2. **Adicionar campos ao schema e às consultas de usuário:**
    - Adicionar campos `twoFactorEnabled` (boolean) e `twoFactorSecret` (String)
 
-3. **Criar `TwoFactorService`:**
+3. **Criar um serviço `TwoFactor` em Go:**
    - `generateSecret()` — gera o secret TOTP
    - `generateQrCodeUri(secret, email)` — gera URI para QR Code
    - `verifyCode(secret, code)` — valida o código de 6 dígitos
@@ -268,4 +259,4 @@ ALTER TABLE sisges.users ADD COLUMN two_factor_secret VARCHAR(64);
 
 1. **Curto prazo (imediato):** Implementar **reCAPTCHA v3** no login e registro — impacto baixo, proteção contra bots
 2. **Médio prazo:** Implementar **2FA via TOTP** — obrigatório para ADMIN, opcional para TEACHER e STUDENT
-3. **Complementar:** Adicionar **rate limiting** (ex: Spring Boot Bucket4j ou filtro customizado) para limitar tentativas de login por IP
+3. **Complementar:** Adicionar **rate limiting** em middleware Go, com armazenamento local limitado ou Redis para múltiplas instâncias

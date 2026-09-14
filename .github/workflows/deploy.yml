@@ -21,9 +21,38 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: sisges_test
+          POSTGRES_USER: sisges
+          POSTGRES_PASSWORD: sisges
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sisges -d sisges_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SISGES_TEST_DATABASE_URL: postgresql://sisges:sisges@127.0.0.1:5432/sisges_test
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24.x'
+          cache: true
+
+      - name: Verify backend
+        run: |
+          go test -race ./...
+          go vet ./...
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
