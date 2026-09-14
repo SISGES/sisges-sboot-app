@@ -59,4 +59,20 @@ func TestPostgresMigrationAndAuthFlow(t *testing.T) {
 	if me.Code != http.StatusOK {
 		t.Fatalf("authenticated request status=%d body=%s", me.Code, me.Body.String())
 	}
+
+	// Exercise startup against a schema previously managed by Flyway. This
+	// catches pgx parameter type mismatches in the compatibility lookup.
+	if _, err := app.db.Exec(ctx, `
+		CREATE TABLE IF NOT EXISTS sisges.flyway_schema_history (
+			version TEXT,
+			success BOOLEAN NOT NULL
+		);
+		INSERT INTO sisges.flyway_schema_history(version,success) VALUES('1',true);
+		DELETE FROM sisges.go_schema_migrations WHERE version=1;
+	`); err != nil {
+		t.Fatal(err)
+	}
+	if err := app.migrate(ctx); err != nil {
+		t.Fatalf("migrate with Flyway history: %v", err)
+	}
 }

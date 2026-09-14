@@ -60,7 +60,10 @@ func (a *App) migrate(ctx context.Context) error {
 			return fmt.Errorf("check migration %d: %w", m.version, err)
 		}
 		if !applied && hasFlyway {
-			err = a.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sisges.flyway_schema_history WHERE success AND version=$1::text)`, m.version).Scan(&applied)
+			// Flyway stores versions as text. Pass text explicitly: pgx's extended
+			// protocol cannot encode an int argument for a parameter PostgreSQL has
+			// resolved as OID 25 (text), even when the SQL contains $1::text.
+			err = a.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sisges.flyway_schema_history WHERE success AND version=$1)`, strconv.Itoa(m.version)).Scan(&applied)
 			if err != nil {
 				return fmt.Errorf("check Flyway migration %d: %w", m.version, err)
 			}
