@@ -21,11 +21,11 @@ type Config struct {
 	GCPercent        int
 	MigrationDir     string
 	SeedEnabled      bool
-	MinioEndpoint    string
-	MinioAccessKey   string
-	MinioSecretKey   string
-	MinioBucket      string
-	MinioRegion      string
+	R2Endpoint       string
+	R2AccessKeyID    string
+	R2SecretAccessKey string
+	R2Bucket         string
+	R2Region         string
 }
 
 func LoadConfig() (Config, error) {
@@ -41,11 +41,11 @@ func LoadConfig() (Config, error) {
 		GCPercent:        int(envInt64("GOGC_PERCENT", 75)),
 		MigrationDir:     env("SISGES_MIGRATION_DIR", "db/migration"),
 		SeedEnabled:      strings.EqualFold(env("SISGES_SEED_ENABLED", "false"), "true"),
-		MinioEndpoint:    strings.TrimRight(os.Getenv("SISGES_MINIO_ENDPOINT"), "/"),
-		MinioAccessKey:   os.Getenv("SISGES_MINIO_ACCESS_KEY"),
-		MinioSecretKey:   os.Getenv("SISGES_MINIO_SECRET_KEY"),
-		MinioBucket:      os.Getenv("SISGES_MINIO_BUCKET"),
-		MinioRegion:      env("SISGES_MINIO_REGION", "us-east-1"),
+		R2Endpoint:       strings.TrimRight(os.Getenv("SISGES_R2_ENDPOINT"), "/"),
+		R2AccessKeyID:    os.Getenv("SISGES_R2_ACCESS_KEY_ID"),
+		R2SecretAccessKey: os.Getenv("SISGES_R2_SECRET_ACCESS_KEY"),
+		R2Bucket:         env("SISGES_R2_BUCKET", "sisges-prd"),
+		R2Region:         env("SISGES_R2_REGION", "auto"),
 	}
 	if len(c.JWTSecret) < 32 {
 		return Config{}, errors.New("SECURITY_JWT_SECRET_KEY must have at least 32 bytes")

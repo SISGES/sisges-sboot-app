@@ -104,7 +104,7 @@ func BenchmarkJWTParse(b *testing.B) {
 	}
 }
 
-func TestS3RequestStreamsAndSignsPayload(t *testing.T) {
+func TestR2RequestStreamsAndSignsPayload(t *testing.T) {
 	payload := []byte("streamed without buffering")
 	sum := sha256.Sum256(payload)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -124,8 +124,8 @@ func TestS3RequestStreamsAndSignsPayload(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
-	cfg := Config{MinioEndpoint: server.URL, MinioAccessKey: "access", MinioSecretKey: "secret", MinioBucket: "bucket", MinioRegion: "us-east-1"}
-	storage, err := NewS3Storage(cfg)
+	cfg := Config{R2Endpoint: server.URL, R2AccessKeyID: "access", R2SecretAccessKey: "secret", R2Bucket: "sisges-prd", R2Region: "auto"}
+	storage, err := NewR2Storage(cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

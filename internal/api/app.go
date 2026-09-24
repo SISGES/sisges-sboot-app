@@ -17,7 +17,7 @@ import (
 type App struct {
 	db      *pgxpool.Pool
 	cfg     Config
-	storage *S3Storage
+	storage *R2Storage
 	feed    *feedHub
 	router  http.Handler
 }
@@ -41,8 +41,8 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		return nil, fmt.Errorf("connect to database: %w", err)
 	}
 	a := &App{db: db, cfg: cfg, feed: newFeedHub(256)}
-	if cfg.MinioEndpoint != "" && cfg.MinioBucket != "" {
-		a.storage, err = NewS3Storage(cfg)
+	if cfg.R2Endpoint != "" {
+		a.storage, err = NewR2Storage(cfg)
 		if err != nil {
 			db.Close()
 			return nil, err

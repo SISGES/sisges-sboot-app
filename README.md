@@ -4,13 +4,14 @@ Memory-conscious Go backend for the SISGES school management application. It pre
 
 ## Run locally
 
-The complete stack is available through Compose:
+The complete local stack is available from the parent workspace:
 
 ```sh
+cd ..
 docker compose up --build
 ```
 
-The API listens on `http://localhost:8080`, the React app on `http://localhost:3001`, MinIO on `http://localhost:9000`, and PostgreSQL is private to the Compose network. The development seed creates:
+The API listens on `http://localhost:8080`, the React app on `http://localhost:3001`, and PostgreSQL is private to the Compose network. Configure R2 credentials in `.env` before uploading post images. The development seed creates:
 
 - e-mail: `adm0001@sisges.com`
 - password: `admin123`
@@ -37,11 +38,25 @@ go run ./cmd/sisges
 | `SISGES_CORS_ALLOWED_ORIGIN_PATTERNS` | local + Vercel | Comma-separated origin patterns |
 | `SISGES_MIGRATION_DIR` | `db/migration` | SQL migration directory |
 | `SISGES_SEED_ENABLED` | `false` | Create a small development dataset |
-| `SISGES_MINIO_ENDPOINT` | unset | Enables object storage when set |
-| `SISGES_MINIO_ACCESS_KEY` | unset | MinIO access key |
-| `SISGES_MINIO_SECRET_KEY` | unset | MinIO secret key |
-| `SISGES_MINIO_BUCKET` | unset | MinIO bucket |
-| `SISGES_MINIO_REGION` | `us-east-1` | S3 signing region |
+| `SISGES_R2_ENDPOINT` | unset | Cloudflare R2 S3 endpoint; enables post-image storage |
+| `SISGES_R2_ACCESS_KEY_ID` | unset | R2 API-token access key ID |
+| `SISGES_R2_SECRET_ACCESS_KEY` | unset | R2 API-token secret access key |
+| `SISGES_R2_BUCKET` | `sisges-prd` | R2 bucket; fixed to `sisges-prd` |
+| `SISGES_R2_REGION` | `auto` | R2 S3 signing region |
+
+R2 is private and used only for post images. New images are stored as `post-img/<random-id>.<extension>` and streamed through the authenticated API; bucket CORS and public access are not required.
+
+### Migrating existing MinIO post images
+
+Do this **before** deploying the R2-only version. Copy `announcements/` from the existing MinIO bucket into `post-img/` in R2, verify object counts and sampled downloads, then update the database paths in the same maintenance window:
+
+```sql
+UPDATE sisges.announcement
+SET image_path = replace(image_path, '/api/files/announcements/', '/api/files/post-img/')
+WHERE image_path LIKE '/api/files/announcements/%';
+```
+
+Keep the MinIO volume/back-up until the updated posts and images have been verified in production. Do not run the SQL before the R2 copies have been verified.
 
 The legacy `SPRING_DATASOURCE_*` variables are still accepted during deployment migration, but they no longer have unsafe credential defaults.
 

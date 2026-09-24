@@ -20,23 +20,28 @@ import (
 
 const maxUploadSize int64 = 10 << 20
 
-var allowedExtensions = map[string]bool{".pdf": true, ".txt": true, ".docx": true, ".doc": true, ".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
+var allowedPostImageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
 
-type S3Storage struct {
+const postImagePrefix = "post-img"
+
+type R2Storage struct {
 	endpoint                             *url.URL
 	accessKey, secretKey, bucket, region string
 	client                               *http.Client
 }
 
-func NewS3Storage(c Config) (*S3Storage, error) {
-	u, e := url.Parse(c.MinioEndpoint)
+func NewR2Storage(c Config) (*R2Storage, error) {
+	u, e := url.Parse(c.R2Endpoint)
 	if e != nil || u.Host == "" {
-		return nil, fmt.Errorf("invalid SISGES_MINIO_ENDPOINT")
+		return nil, fmt.Errorf("invalid SISGES_R2_ENDPOINT")
 	}
-	if c.MinioAccessKey == "" || c.MinioSecretKey == "" {
-		return nil, fmt.Errorf("MinIO credentials are required when storage is enabled")
+	if c.R2AccessKeyID == "" || c.R2SecretAccessKey == "" {
+		return nil, fmt.Errorf("R2 credentials are required when storage is enabled")
 	}
-	return &S3Storage{u, c.MinioAccessKey, c.MinioSecretKey, c.MinioBucket, c.MinioRegion, &http.Client{Timeout: 45 * time.Second}}, nil
+	if c.R2Bucket != "sisges-prd" {
+		return nil, fmt.Errorf("SISGES_R2_BUCKET must be sisges-prd")
+	}
+	return &R2Storage{u, c.R2AccessKeyID, c.R2SecretAccessKey, c.R2Bucket, c.R2Region, &http.Client{Timeout: 45 * time.Second}}, nil
 }
 func hmacSHA(key []byte, value string) []byte {
 	m := hmac.New(sha256.New, key)
@@ -50,7 +55,7 @@ func escapeKey(key string) string {
 	}
 	return strings.Join(parts, "/")
 }
-func (s *S3Storage) request(ctx context.Context, method, key, payloadHash, contentType string, body io.Reader, length int64) (*http.Response, error) {
+func (s *R2Storage) request(ctx context.Context, method, key, payloadHash, contentType string, body io.Reader, length int64) (*http.Response, error) {
 	now := time.Now().UTC()
 	date := now.Format("20060102")
 	stamp := now.Format("20060102T150405Z")
@@ -135,8 +140,8 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer part.Close()
 	ext := strings.ToLower(filepath.Ext(filepath.Base(part.FileName())))
-	if !allowedExtensions[ext] {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tipo de arquivo não permitido. Use: pdf, txt, docx, doc, png, jpg, jpeg, gif, webp"})
+	if !allowedPostImageExtensions[ext] {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tipo de imagem não permitido. Use: png, jpg, jpeg, gif ou webp"})
 		return
 	}
 	tmp, e := os.CreateTemp("", "sisges-upload-*")
@@ -176,6 +181,10 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = field.Close()
 	}
+	if validSubdir(subdir) != postImagePrefix {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Este armazenamento aceita apenas imagens de avisos"})
+		return
+	}
 	id, e := randomID()
 	if e != nil {
 		writeError(w, internalError(e))
@@ -211,7 +220,7 @@ func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := path.Clean(strings.TrimPrefix(r.PathValue("key"), "/"))
-	if key == "." || key == ".." || strings.HasPrefix(key, "../") {
+	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !strings.HasPrefix(key, postImagePrefix+"/") {
 		writeError(w, validationError("key", "Caminho de arquivo inválido"))
 		return
 	}
@@ -239,7 +248,7 @@ func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 	_, _ = io.Copy(w, resp.Body)
 }
 
-func (s *S3Storage) delete(ctx context.Context, key string) error {
+func (s *R2Storage) delete(ctx context.Context, key string) error {
 	empty := sha256.Sum256(nil)
 	resp, err := s.request(ctx, http.MethodDelete, key, hex.EncodeToString(empty[:]), "", nil, 0)
 	if err != nil {
@@ -262,7 +271,7 @@ func (a *App) deleteStoredPath(ctx context.Context, storedPath *string) {
 		return
 	}
 	key := path.Clean(strings.TrimPrefix(*storedPath, prefix))
-	if key == "." || key == ".." || strings.HasPrefix(key, "../") {
+	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !strings.HasPrefix(key, postImagePrefix+"/") {
 		return
 	}
 	_ = a.storage.delete(ctx, key)
