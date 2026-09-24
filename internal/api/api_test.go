@@ -108,7 +108,7 @@ func TestR2RequestStreamsAndSignsPayload(t *testing.T) {
 	payload := []byte("streamed without buffering")
 	sum := sha256.Sum256(payload)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut || r.URL.Path != "/bucket/profiles/file.txt" {
+		if r.Method != http.MethodPut || r.URL.Path != "/sisges-prd/post-img/file.png" {
 			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
 		}
 		if !strings.HasPrefix(r.Header.Get("Authorization"), "AWS4-HMAC-SHA256 Credential=access/") {
@@ -129,7 +129,7 @@ func TestR2RequestStreamsAndSignsPayload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resp, err := storage.request(context.Background(), http.MethodPut, "profiles/file.txt", hex.EncodeToString(sum[:]), "text/plain", bytes.NewReader(payload), int64(len(payload)))
+	resp, err := storage.request(context.Background(), http.MethodPut, "post-img/file.png", hex.EncodeToString(sum[:]), "image/png", bytes.NewReader(payload), int64(len(payload)))
 	if err != nil {
 		t.Fatal(err)
 	}
