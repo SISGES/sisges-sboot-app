@@ -151,11 +151,9 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	name := tmp.Name()
 	defer os.Remove(name)
+	defer tmp.Close()
 	hasher := sha256.New()
 	size, e := io.Copy(io.MultiWriter(tmp, hasher), io.LimitReader(part, maxUploadSize+1))
-	if closeErr := tmp.Close(); e == nil {
-		e = closeErr
-	}
 	if e != nil {
 		writeError(w, internalError(e))
 		return
@@ -191,17 +189,15 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := validSubdir(subdir) + "/" + id + ext
-	f, e := os.Open(name)
-	if e != nil {
+	if _, e = tmp.Seek(0, io.SeekStart); e != nil {
 		writeError(w, internalError(e))
 		return
 	}
-	defer f.Close()
 	contentType := part.Header.Get("Content-Type")
 	if contentType == "" {
 		contentType = "application/octet-stream"
 	}
-	resp, e := a.storage.request(r.Context(), http.MethodPut, key, hex.EncodeToString(hasher.Sum(nil)), contentType, f, size)
+	resp, e := a.storage.request(r.Context(), http.MethodPut, key, hex.EncodeToString(hasher.Sum(nil)), contentType, tmp, size)
 	if e != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Erro ao salvar arquivo"})
 		return
