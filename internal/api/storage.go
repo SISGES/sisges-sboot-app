@@ -35,6 +35,9 @@ func NewR2Storage(c Config) (*R2Storage, error) {
 	if e != nil || u.Host == "" {
 		return nil, fmt.Errorf("invalid SISGES_R2_ENDPOINT")
 	}
+	if strings.Trim(u.Path, "/") != "" {
+		return nil, fmt.Errorf("SISGES_R2_ENDPOINT must be the account endpoint without a bucket path")
+	}
 	if c.R2AccessKeyID == "" || c.R2SecretAccessKey == "" {
 		return nil, fmt.Errorf("R2 credentials are required when storage is enabled")
 	}
