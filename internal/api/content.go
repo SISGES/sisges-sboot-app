@@ -555,8 +555,12 @@ func (a *App) createEvent(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-	if strings.TrimSpace(req.Title) == "" || !req.EventAt.After(time.Now()) {
-		writeError(w, validationError("eventAt", "Evento deve estar no futuro"))
+	if strings.TrimSpace(req.Title) == "" {
+		writeError(w, validationError("title", "Título é obrigatório"))
+		return
+	}
+	if !validEventDate(req.EventAt, time.Now()) {
+		writeError(w, validationError("eventAt", "O evento deve ocorrer entre agora e o fim do ano atual (horário de São Paulo)"))
 		return
 	}
 	if req.Audience != "ALL" && req.Audience != "TEACHERS" && req.Audience != "CLASS" {
