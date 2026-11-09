@@ -20,9 +20,18 @@ import (
 
 const maxUploadSize int64 = 10 << 20
 
-var allowedPostImageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
+var allowedImageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
 
 const postImagePrefix = "post-img"
+const profileImagePrefix = "profile-img"
+
+func allowedImagePrefix(value string) bool {
+	return value == postImagePrefix || value == profileImagePrefix
+}
+
+func allowedImageKey(value string) bool {
+	return strings.HasPrefix(value, postImagePrefix+"/") || strings.HasPrefix(value, profileImagePrefix+"/")
+}
 
 type R2Storage struct {
 	endpoint                             *url.URL
@@ -143,7 +152,7 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer part.Close()
 	ext := strings.ToLower(filepath.Ext(filepath.Base(part.FileName())))
-	if !allowedPostImageExtensions[ext] {
+	if !allowedImageExtensions[ext] {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tipo de imagem não permitido. Use: png, jpg, jpeg, gif ou webp"})
 		return
 	}
@@ -182,8 +191,9 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		}
 		_ = field.Close()
 	}
-	if validSubdir(subdir) != postImagePrefix {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Este armazenamento aceita apenas imagens de avisos"})
+	subdir = validSubdir(subdir)
+	if !allowedImagePrefix(subdir) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Destino de imagem não permitido"})
 		return
 	}
 	id, e := randomID()
@@ -191,7 +201,7 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		writeError(w, internalError(e))
 		return
 	}
-	key := validSubdir(subdir) + "/" + id + ext
+	key := subdir + "/" + id + ext
 	if _, e = tmp.Seek(0, io.SeekStart); e != nil {
 		writeError(w, internalError(e))
 		return
@@ -219,7 +229,7 @@ func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := path.Clean(strings.TrimPrefix(r.PathValue("key"), "/"))
-	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !strings.HasPrefix(key, postImagePrefix+"/") {
+	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !allowedImageKey(key) {
 		writeError(w, validationError("key", "Caminho de arquivo inválido"))
 		return
 	}
@@ -270,7 +280,7 @@ func (a *App) deleteStoredPath(ctx context.Context, storedPath *string) {
 		return
 	}
 	key := path.Clean(strings.TrimPrefix(*storedPath, prefix))
-	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !strings.HasPrefix(key, postImagePrefix+"/") {
+	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !allowedImageKey(key) {
 		return
 	}
 	_ = a.storage.delete(ctx, key)

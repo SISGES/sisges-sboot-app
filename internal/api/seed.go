@@ -12,8 +12,11 @@ import (
 // seed creates an idempotent, realistic local-only demonstration dataset.
 func (a *App) seed(ctx context.Context) error {
 	var exists bool
-	if err := a.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sisges.users WHERE register='ADM0001' AND deleted_at IS NULL)`).Scan(&exists); err != nil || exists {
+	if err := a.db.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sisges.users WHERE register='ADM0001' AND deleted_at IS NULL)`).Scan(&exists); err != nil {
 		return err
+	}
+	if exists {
+		return a.seedAnnouncementEngagement(ctx)
 	}
 	tx, err := a.db.Begin(ctx)
 	if err != nil {
@@ -106,18 +109,26 @@ func (a *App) seed(ctx context.Context) error {
 		pair, shared := siblingResponsibles[group]
 		if !shared {
 			first, err := createResponsible(responsibleName, fmt.Sprintf("%03d", i))
-			if err != nil { return fmt.Errorf("seed responsible: %w", err) }
+			if err != nil {
+				return fmt.Errorf("seed responsible: %w", err)
+			}
 			pair.first = first
 			if parentCount == 2 {
 				secondName := fmt.Sprintf("%s %s", responsibleFirstNames[i%len(responsibleFirstNames)], studentLastNames[(i-1)/len(studentFirstNames)])
 				second, err := createResponsible(secondName, fmt.Sprintf("a%03d", i))
-				if err != nil { return fmt.Errorf("seed second responsible: %w", err) }
+				if err != nil {
+					return fmt.Errorf("seed second responsible: %w", err)
+				}
 				pair.second = second
 			}
-			if group >= 0 { siblingResponsibles[group] = pair }
+			if group >= 0 {
+				siblingResponsibles[group] = pair
+			}
 		}
 		for _, responsibleID := range []int{pair.first, pair.second} {
-			if responsibleID == 0 { continue }
+			if responsibleID == 0 {
+				continue
+			}
 			if _, err := tx.Exec(ctx, `INSERT INTO sisges.student_responsible_link(student_id,responsible_id) VALUES($1,$2)`, studentID, responsibleID); err != nil {
 				return fmt.Errorf("seed student responsible: %w", err)
 			}
@@ -144,5 +155,78 @@ func (a *App) seed(ctx context.Context) error {
 			return fmt.Errorf("seed upcoming event %d: %w", i, err)
 		}
 	}
-	return tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return err
+	}
+	return a.seedAnnouncementEngagement(ctx)
+}
+
+func (a *App) seedAnnouncementEngagement(ctx context.Context) error {
+	announcementRows, err := a.db.Query(ctx, `SELECT id FROM sisges.announcement WHERE deleted_at IS NULL ORDER BY created_at,id LIMIT 20`)
+	if err != nil {
+		return fmt.Errorf("seed engagement announcements: %w", err)
+	}
+	announcementIDs := make([]int, 0, 20)
+	for announcementRows.Next() {
+		var id int
+		if err := announcementRows.Scan(&id); err != nil {
+			announcementRows.Close()
+			return fmt.Errorf("scan seed announcement: %w", err)
+		}
+		announcementIDs = append(announcementIDs, id)
+	}
+	if err := announcementRows.Err(); err != nil {
+		announcementRows.Close()
+		return fmt.Errorf("list seed announcements: %w", err)
+	}
+	announcementRows.Close()
+
+	userRows, err := a.db.Query(ctx, `SELECT id FROM sisges.users WHERE deleted_at IS NULL ORDER BY id LIMIT 16`)
+	if err != nil {
+		return fmt.Errorf("seed engagement users: %w", err)
+	}
+	userIDs := make([]int, 0, 16)
+	for userRows.Next() {
+		var id int
+		if err := userRows.Scan(&id); err != nil {
+			userRows.Close()
+			return fmt.Errorf("scan seed user: %w", err)
+		}
+		userIDs = append(userIDs, id)
+	}
+	if err := userRows.Err(); err != nil {
+		userRows.Close()
+		return fmt.Errorf("list seed users: %w", err)
+	}
+	userRows.Close()
+	if len(announcementIDs) == 0 || len(userIDs) == 0 {
+		return nil
+	}
+
+	comments := []string{
+		"Obrigado pelo aviso!",
+		"Informação recebida, vou me organizar.",
+		"Muito importante para a comunidade escolar.",
+		"Valeu por compartilhar!",
+		"Ficou claro, obrigado.",
+	}
+	for announcementIndex, announcementID := range announcementIDs {
+		likeCount := 3 + announcementIndex%6
+		for offset := 0; offset < likeCount; offset++ {
+			userID := userIDs[(announcementIndex+offset)%len(userIDs)]
+			if _, err := a.db.Exec(ctx, `INSERT INTO sisges.announcement_like(announcement_id,user_id) VALUES($1,$2) ON CONFLICT(announcement_id,user_id) DO NOTHING`, announcementID, userID); err != nil {
+				return fmt.Errorf("seed announcement like: %w", err)
+			}
+		}
+
+		commentCount := 1 + announcementIndex%3
+		for offset := 0; offset < commentCount; offset++ {
+			userID := userIDs[(announcementIndex+offset+2)%len(userIDs)]
+			content := comments[(announcementIndex+offset)%len(comments)]
+			if _, err := a.db.Exec(ctx, `INSERT INTO sisges.announcement_comment(announcement_id,user_id,content) SELECT $1,$2,$3 WHERE NOT EXISTS (SELECT 1 FROM sisges.announcement_comment WHERE announcement_id=$1 AND user_id=$2 AND content=$3 AND deleted_at IS NULL)`, announcementID, userID, content); err != nil {
+				return fmt.Errorf("seed announcement comment: %w", err)
+			}
+		}
+	}
+	return nil
 }

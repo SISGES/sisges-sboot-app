@@ -215,6 +215,7 @@ func (a *App) userByID(w http.ResponseWriter, r *http.Request) {
 type updateProfileRequest struct {
 	Name             *string `json:"name"`
 	Password         *string `json:"password"`
+	CurrentPassword  *string `json:"currentPassword"`
 	ProfileImagePath *string `json:"profileImagePath"`
 }
 
@@ -238,6 +239,19 @@ func (a *App) updateMe(w http.ResponseWriter, r *http.Request) {
 	}
 	var hash *string
 	if req.Password != nil && *req.Password != "" {
+		if req.CurrentPassword == nil || strings.TrimSpace(*req.CurrentPassword) == "" {
+			writeError(w, validationError("currentPassword", "Informe a senha atual"))
+			return
+		}
+		var currentHash string
+		if err := a.db.QueryRow(r.Context(), `SELECT password FROM sisges.users WHERE id=$1 AND deleted_at IS NULL`, p.ID).Scan(&currentHash); err != nil {
+			writeError(w, unauthorized())
+			return
+		}
+		if bcrypt.CompareHashAndPassword([]byte(currentHash), []byte(*req.CurrentPassword)) != nil {
+			writeError(w, validationError("currentPassword", "Senha atual incorreta"))
+			return
+		}
 		b, err := bcrypt.GenerateFromPassword([]byte(*req.Password), bcrypt.DefaultCost)
 		if err != nil {
 			writeError(w, internalError(err))

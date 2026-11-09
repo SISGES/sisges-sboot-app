@@ -60,6 +60,30 @@ func TestPostgresMigrationAndAuthFlow(t *testing.T) {
 		t.Fatalf("authenticated request status=%d body=%s", me.Code, me.Body.String())
 	}
 
+	missingCurrentPassword := httptest.NewRequest(http.MethodPatch, "/api/users/me", bytes.NewBufferString(`{"password":"admin123"}`))
+	missingCurrentPassword.Header.Set("Authorization", "Bearer "+response.AccessToken)
+	missingCurrentPasswordResult := httptest.NewRecorder()
+	app.Handler().ServeHTTP(missingCurrentPasswordResult, missingCurrentPassword)
+	if missingCurrentPasswordResult.Code != http.StatusBadRequest {
+		t.Fatalf("password update without current password status=%d body=%s", missingCurrentPasswordResult.Code, missingCurrentPasswordResult.Body.String())
+	}
+
+	wrongCurrentPassword := httptest.NewRequest(http.MethodPatch, "/api/users/me", bytes.NewBufferString(`{"password":"admin123","currentPassword":"incorrect"}`))
+	wrongCurrentPassword.Header.Set("Authorization", "Bearer "+response.AccessToken)
+	wrongCurrentPasswordResult := httptest.NewRecorder()
+	app.Handler().ServeHTTP(wrongCurrentPasswordResult, wrongCurrentPassword)
+	if wrongCurrentPasswordResult.Code != http.StatusBadRequest {
+		t.Fatalf("password update with incorrect current password status=%d body=%s", wrongCurrentPasswordResult.Code, wrongCurrentPasswordResult.Body.String())
+	}
+
+	validPasswordUpdate := httptest.NewRequest(http.MethodPatch, "/api/users/me", bytes.NewBufferString(`{"password":"admin123","currentPassword":"admin123"}`))
+	validPasswordUpdate.Header.Set("Authorization", "Bearer "+response.AccessToken)
+	validPasswordUpdateResult := httptest.NewRecorder()
+	app.Handler().ServeHTTP(validPasswordUpdateResult, validPasswordUpdate)
+	if validPasswordUpdateResult.Code != http.StatusOK {
+		t.Fatalf("password update with current password status=%d body=%s", validPasswordUpdateResult.Code, validPasswordUpdateResult.Body.String())
+	}
+
 	// Exercise startup against a schema previously managed by Flyway. This
 	// catches pgx parameter type mismatches in the compatibility lookup.
 	if _, err := app.db.Exec(ctx, `
