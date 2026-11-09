@@ -212,7 +212,8 @@ func (a *App) classRelation(w http.ResponseWriter, r *http.Request) {
 	case "student/remove":
 		q = `UPDATE sisges.student SET class_id=NULL,updated_at=now() WHERE id=$2 AND class_id=$1 AND deleted_at IS NULL`
 	case "teacher/add":
-		q = `INSERT INTO sisges.teacher_class(class_id,teacher_id) VALUES($1,$2) ON CONFLICT(teacher_id,class_id) DO UPDATE SET deleted_at=NULL`
+		a.linkTeacherWithDisciplines(w, r, cid, id)
+		return
 	case "teacher/remove":
 		q = `UPDATE sisges.teacher_class SET deleted_at=now() WHERE class_id=$1 AND teacher_id=$2 AND deleted_at IS NULL`
 	case "discipline/add":
