@@ -93,7 +93,7 @@ A save includes the current `revision` and `slots` (`weekday` 1–5, `slot` 0–
 a stale revision is rejected to protect concurrent edits. Subjects must already belong to the class.
 
 The fixed 50-minute intervals are 07:00–07:50, 07:50–08:40, 08:40–09:30,
-09:45–10:35 and 10:35–11:25. The break is 09:30–09:45; 11:25–11:50 remains unassigned.
+09:45–10:35 and 10:35–11:25. The break is 09:30–09:45; the school day ends at 11:25.
 Schedules apply to unrecorded dates; saved records retain their subject and content.
 
 Teachers use `GET /api/classes/{id}/lesson-day?date=YYYY-MM-DD` and
