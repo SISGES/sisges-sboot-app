@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 )
@@ -63,35 +64,7 @@ func (a *App) checkMeeting(r *http.Request, req meetingRequest, teacherID, exclu
 	return nil
 }
 func (a *App) createMeeting(w http.ResponseWriter, r *http.Request) {
-	var req meetingRequest
-	if !decodeJSON(w, r, &req) {
-		return
-	}
-	if e := validateMeeting(req); e != nil {
-		writeError(w, e)
-		return
-	}
-	tid, err := a.teacherIDForUser(r, currentPrincipal(r).ID)
-	if err != nil {
-		writeError(w, businessError("Professor não encontrado."))
-		return
-	}
-	if err = a.checkMeeting(r, req, tid, 0); err != nil {
-		writeError(w, err)
-		return
-	}
-	var id int
-	err = a.db.QueryRow(r.Context(), `INSERT INTO sisges.class_meeting(class_id,discipline_id,teacher_id,meeting_date,start_time,end_time) VALUES($1,$2,$3,$4,$5,$6) RETURNING id`, req.ClassID, req.DisciplineID, tid, req.Date, req.StartTime, req.EndTime).Scan(&id)
-	if err != nil {
-		writeError(w, internalError(err))
-		return
-	}
-	x, err := a.readMeetingSearch(r, id)
-	if err != nil {
-		writeError(w, internalError(err))
-		return
-	}
-	writeJSON(w, http.StatusCreated, x)
+	writeError(w, businessError("Selecione uma aula da grade horária para registrar o conteúdo."))
 }
 func (a *App) readMeetingSearch(r *http.Request, id int) (meetingSearch, error) {
 	var x meetingSearch
@@ -134,11 +107,14 @@ func (a *App) searchMeetings(w http.ResponseWriter, r *http.Request) {
 }
 
 type meetingDetail struct {
-	ID        int    `json:"id"`
-	Date      string `json:"date"`
-	StartTime string `json:"startTime"`
-	EndTime   string `json:"endTime"`
-	ClassInfo struct {
+	ScheduleSlot *int               `json:"scheduleSlot"`
+	Content      string             `json:"content"`
+	Attachments  []lessonAttachment `json:"attachments"`
+	ID           int                `json:"id"`
+	Date         string             `json:"date"`
+	StartTime    string             `json:"startTime"`
+	EndTime      string             `json:"endTime"`
+	ClassInfo    struct {
 		ID           int             `json:"id"`
 		Name         string          `json:"name"`
 		AcademicYear string          `json:"academicYear"`
@@ -164,6 +140,15 @@ func (a *App) writeMeeting(w http.ResponseWriter, r *http.Request, id int) {
 			writeError(w, forbidden())
 			return
 		}
+	}
+	var raw []byte
+	if err = a.db.QueryRow(r.Context(), `SELECT schedule_slot,content,attachments FROM sisges.class_meeting WHERE id=$1`, id).Scan(&x.ScheduleSlot, &x.Content, &raw); err != nil {
+		writeError(w, internalError(err))
+		return
+	}
+	if err = json.Unmarshal(raw, &x.Attachments); err != nil {
+		writeError(w, internalError(err))
+		return
 	}
 	x.Date = date.Format("2006-01-02")
 	if tid != nil {
@@ -194,6 +179,15 @@ func (a *App) updateMeeting(w http.ResponseWriter, r *http.Request) {
 	id, e := pathInt(r, "id")
 	if e != nil {
 		writeError(w, e)
+		return
+	}
+	var scheduled bool
+	if err := a.db.QueryRow(r.Context(), `SELECT schedule_slot IS NOT NULL FROM sisges.class_meeting WHERE id=$1 AND deleted_at IS NULL`, id).Scan(&scheduled); err != nil {
+		writeError(w, resourceError("Aula"))
+		return
+	}
+	if scheduled {
+		writeError(w, businessError("Os horários desta aula são definidos pela grade. Edite o conteúdo no registro diário."))
 		return
 	}
 	var req meetingRequest

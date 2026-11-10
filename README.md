@@ -84,3 +84,25 @@ go vet ./...
 ```
 
 `GET /health` reports database connectivity. All application routes remain under `/api`.
+
+### Weekly timetables and lesson records
+
+Migration V24 runs automatically at startup. Deploy the backend before the frontend.
+Administrators manage recurring Monday–Friday schedules through `GET/PUT /api/classes/{id}/schedule`.
+A save includes the current `revision` and `slots` (`weekday` 1–5, `slot` 0–4, `disciplineId`);
+a stale revision is rejected to protect concurrent edits. Subjects must already belong to the class.
+
+The fixed 50-minute intervals are 07:00–07:50, 07:50–08:40, 08:40–09:30,
+09:45–10:35 and 10:35–11:25. The break is 09:30–09:45; 11:25–11:50 remains unassigned.
+Schedules apply to unrecorded dates; saved records retain their subject and content.
+
+Teachers use `GET /api/classes/{id}/lesson-day?date=YYYY-MM-DD` and
+`PUT /api/classes/{id}/lesson-day` with `date`, `slot`, `disciplineId`, `content`, and
+`attachments: [{name,path}]`. Only linked teachers who teach the scheduled subject can create
+records. Re-saving updates the same record, preserving attendance and evaluative activities.
+Legacy manual `POST /api/class` creation is rejected; existing lessons remain accessible.
+
+Lesson attachments use the `lesson-files` upload destination, scoped to the uploading user.
+Supported files: images, PDF, TXT and Office documents; maximum 10 MB each and 10 per record.
+R2 storage configuration is required for uploads. The existing image destinations remain image-only.
+Run the PostgreSQL flow tests with `SISGES_TEST_DATABASE_URL` pointing to an isolated test database.

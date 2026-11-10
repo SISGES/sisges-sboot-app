@@ -101,6 +101,10 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("GET /api/disciplines/{id}", a.requireAny([]string{"ADMIN", "TEACHER"}, a.disciplineByID))
 	mux.HandleFunc("PUT /api/disciplines/update/{id}", a.require("ADMIN", a.updateDiscipline))
 
+	mux.HandleFunc("GET /api/classes/{id}/schedule", a.require("ADMIN", a.getSchedule))
+	mux.HandleFunc("PUT /api/classes/{id}/schedule", a.require("ADMIN", a.saveSchedule))
+	mux.HandleFunc("GET /api/classes/{id}/lesson-day", a.require("TEACHER", a.teacherDay))
+	mux.HandleFunc("PUT /api/classes/{id}/lesson-day", a.require("TEACHER", a.saveLessonRecord))
 	mux.HandleFunc("POST /api/class", a.require("TEACHER", a.createMeeting))
 	mux.HandleFunc("POST /api/class/search", a.requireAny([]string{"ADMIN", "TEACHER"}, a.searchMeetings))
 	mux.HandleFunc("GET /api/class/{id}", a.requireAny([]string{"ADMIN", "TEACHER"}, a.meetingByID))

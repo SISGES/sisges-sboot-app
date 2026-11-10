@@ -20,6 +20,8 @@ import (
 
 const maxUploadSize int64 = 10 << 20
 
+var allowedLessonExtensions = map[string]bool{".pdf": true, ".txt": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true}
+
 var allowedImageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
 
 const postImagePrefix = "post-img"
@@ -152,8 +154,8 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer part.Close()
 	ext := strings.ToLower(filepath.Ext(filepath.Base(part.FileName())))
-	if !allowedImageExtensions[ext] {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tipo de imagem não permitido. Use: png, jpg, jpeg, gif ou webp"})
+	if !allowedImageExtensions[ext] && !allowedLessonExtensions[ext] {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tipo de arquivo não permitido. Use imagens, PDF, TXT ou documentos Office"})
 		return
 	}
 	tmp, e := os.CreateTemp("", "sisges-upload-*")
@@ -192,8 +194,14 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		_ = field.Close()
 	}
 	subdir = validSubdir(subdir)
-	if !allowedImagePrefix(subdir) {
+	if !allowedImagePrefix(subdir) && subdir != "lesson-files" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Destino de imagem não permitido"})
+		return
+	}
+	if subdir == "lesson-files" {
+		subdir = fmt.Sprintf("lesson-files/%d", currentPrincipal(r).ID)
+	} else if !allowedImageExtensions[ext] {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Este destino aceita apenas imagens"})
 		return
 	}
 	id, e := randomID()
@@ -229,9 +237,27 @@ func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	key := path.Clean(strings.TrimPrefix(r.PathValue("key"), "/"))
-	if key == "." || key == ".." || strings.HasPrefix(key, "../") || !allowedImageKey(key) {
+	if key == "." || key == ".." || strings.HasPrefix(key, "../") || (!allowedImageKey(key) && !strings.HasPrefix(key, "lesson-files/")) {
 		writeError(w, validationError("key", "Caminho de arquivo inválido"))
 		return
+	}
+	if strings.HasPrefix(key, "lesson-files/") {
+		p := currentPrincipal(r)
+		ownerPrefix := fmt.Sprintf("lesson-files/%d/", p.ID)
+		if p.Role != "ADMIN" && !strings.HasPrefix(key, ownerPrefix) {
+			var allowed bool
+			err := a.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM sisges.class_meeting m WHERE m.deleted_at IS NULL AND m.attachments @> $2::jsonb AND (EXISTS(SELECT 1 FROM sisges.student s WHERE s.user_id=$1 AND s.class_id=m.class_id AND s.deleted_at IS NULL) OR EXISTS(SELECT 1 FROM sisges.teacher t WHERE t.user_id=$1 AND t.id=m.teacher_id AND t.deleted_at IS NULL)))`, p.ID, fmt.Sprintf(`[{"path":%q}]`, "/api/files/"+key)).Scan(&allowed)
+			if err != nil {
+				writeError(w, internalError(err))
+				return
+			}
+			if !allowed {
+				writeError(w, forbidden())
+				return
+			}
+		}
+		w.Header().Set("Content-Disposition", "attachment")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
 	}
 	empty := sha256.Sum256(nil)
 	resp, e := a.storage.request(r.Context(), http.MethodGet, key, hex.EncodeToString(empty[:]), "", nil, -1)

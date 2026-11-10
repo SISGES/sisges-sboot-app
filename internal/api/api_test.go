@@ -30,7 +30,13 @@ func TestJWTCompatibilityClaimsAndTamperDetection(t *testing.T) {
 	if p.ID != 42 || p.Email != "student@sisges.com" || p.Role != "STUDENT" {
 		t.Fatalf("unexpected claims: %#v", p)
 	}
-	tampered := token[:len(token)-1] + map[bool]string{true: "A", false: "B"}[strings.HasSuffix(token, "A")]
+	// Change a significant signature byte, rather than optional base64 padding bits.
+	signatureStart := strings.LastIndex(token, ".") + 1
+	replacement := "A"
+	if token[signatureStart] == 'A' {
+		replacement = "B"
+	}
+	tampered := token[:signatureStart] + replacement + token[signatureStart+1:]
 	if _, err := a.parseToken(tampered); err == nil {
 		t.Fatal("tampered token accepted")
 	}
