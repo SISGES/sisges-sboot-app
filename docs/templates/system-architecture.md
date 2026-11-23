@@ -1,31 +1,31 @@
-# [Subject] — System architecture
+# [Assunto] — Arquitetura do sistema
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Context and boundaries
+## Contexto e limites
 
-[Draw named actors, deployable units, stores and trust boundaries.]
+[Represente em um diagrama os atores, as unidades de implantação, os repositórios de dados e os limites de confiança.]
 
-| Component | Owns | Inputs and outputs | Dependency or trust boundary |
+| Componente | Responsabilidade | Entradas e saídas | Dependência ou limite de confiança |
 | --- | --- | --- | --- |
-| [Component] | [Owns] | [Inputs and outputs] | [Dependency or trust boundary] |
+| [Componente] | [Responsabilidade] | [Entradas e saídas] | [Dependência ou limite de confiança] |
 
-## Runtime and critical flows
+## Execução e fluxos críticos
 
-[Trace a request, an asynchronous path and a failure across components.]
+[Acompanhe uma requisição, um fluxo assíncrono e uma falha ao longo dos componentes.]
 
-## Deployment and constraints
+## Implantação e restrições
 
-[Specify dependencies, lifecycle, limits, assumptions and scaling implications.]
+[Especifique dependências, ciclo de vida, limites, premissas e implicações para o aumento de escala.]
 
-## Design rationale
+## Justificativa das escolhas
 
-[Distinguish observable trade-offs from proposed changes.]
+[Registre as vantagens e limitações observadas e identifique as mudanças que ainda são propostas.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

@@ -1,9 +1,9 @@
-# SISGES school management API
+# API de gestão escolar do SISGES
 
-This repository contains the Go service, PostgreSQL migrations and shared technical handbook for the SISGES school management application. The React client runs in a separate repository.
+Este repositório reúne o serviço em Go, as migrações do PostgreSQL e o manual técnico compartilhado do Sistema de Gestão Escolar (SISGES). O cliente React tem repositório próprio.
 
-- [Technical handbook and authoring templates](docs/README.md)
-- [Run the app locally](docs/engineering/development.md)
-- [API reference and authenticated examples](docs/api/README.md)
-- [Architecture and database](docs/architecture/system.md)
-- [React client](https://github.com/SISGES/sisges-react-app)
+- [Manual técnico e modelos de documentos](docs/README.md)
+- [Como executar o sistema localmente](docs/engineering/development.md)
+- [Referência da API e exemplos com autenticação](docs/api/README.md)
+- [Arquitetura e banco de dados](docs/architecture/system.md)
+- [Cliente React](https://github.com/SISGES/sisges-react-app)

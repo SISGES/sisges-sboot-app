@@ -1,33 +1,33 @@
-# Classes and disciplines
+# Turmas e disciplinas
 
-A class is a cohort. `academicYear` is its grade/series label, such as `6º ano`. Use teacher and student IDs from their role-specific directory searches. The examples below assume the caller already holds the appropriate role. [Directory](identity.md)
+Uma turma reúne alunos da mesma série. O campo `academicYear` representa a série, por exemplo `6º ano`. Use os IDs de professor e aluno retornados pelas buscas específicas de cada perfil. Os exemplos pressupõem uma sessão com o perfil exigido. [Diretório de pessoas](identity.md)
 
-## Classes and membership
+## Turmas e vínculos
 
-| Operation | Access | Request | Response and behavior |
+| Operação | Acesso | Requisição | Resposta e comportamento |
 | --- | --- | --- | --- |
-| `POST /api/classes` | ADMIN | `{name,academicYear,studentIds?,teacherIds?,disciplineIds?}` | `200 Class`. Requires nonblank name and a series. Creates the cohort and assigns selected students, teachers and disciplines transactionally. A class insert conflict returns `409`. |
-| `POST /api/classes/search` | ADMIN, TEACHER | Optional `{name,academicYear}` | `200 [{id,name,academicYear,studentCount,teacherCount}]`. Partial name and exact series. Sorted by name, capped at 1,000. Normal teacher accounts see assigned classes. |
-| `GET /api/classes/{id}` | ADMIN, TEACHER | Class ID | `200 Class`. Teacher must have an active class assignment, otherwise `403`. |
-| `DELETE /api/classes/delete/{id}` | ADMIN | Class ID | `204`. Soft-deletes the class. Missing or already deleted returns `404`. |
-| `POST /api/classes/{classID}/student/add/{id}` | ADMIN | Student ID, no body | `200 Class`. Sets the student's current class, including reassignment from another class. |
-| `POST /api/classes/{classID}/student/remove/{id}` | ADMIN | Student ID, no body | `200 Class`. Clears the current class only if it matches the path. |
-| `POST /api/classes/{classID}/teacher/add/{id}` | ADMIN | Teacher ID and optional `{disciplineIds:[…]}` | `200 Class`. Restores or creates the teacher link and links the selected subjects in one transaction. |
-| `POST /api/classes/{classID}/teacher/remove/{id}` | ADMIN | Teacher ID, no body | `200 Class`. Soft-deletes this class/teacher link. Class/discipline links persist. |
-| `POST /api/classes/{classID}/discipline/add/{id}` | ADMIN | Discipline ID, no body | `200 Class`. Restores or creates the subject link. |
-| `POST /api/classes/{classID}/discipline/remove/{id}` | ADMIN | Discipline ID, no body | `200 Class`. Soft-deletes the subject link. |
+| `POST /api/classes` | ADMIN | `{name,academicYear,studentIds?,teacherIds?,disciplineIds?}` | `200 Class`. Exige nome não vazio e série. Cria a turma e vincula os alunos, professores e disciplinas selecionados em uma transação. Um conflito ao criar a turma retorna `409`. |
+| `POST /api/classes/search` | ADMIN, TEACHER | `{name,academicYear}` opcional | `200 [{id,name,academicYear,studentCount,teacherCount}]`. Busca parcial por nome e exata por série. Em ordem de nome, até 1.000 resultados. Professores com cadastro docente ativo recebem suas turmas vinculadas. |
+| `GET /api/classes/{id}` | ADMIN, TEACHER | ID da turma | `200 Class`. Para professores, exige vínculo ativo com a turma. Caso contrário, retorna `403`. |
+| `DELETE /api/classes/delete/{id}` | ADMIN | ID da turma | `204`. Marca a turma como excluída. Uma turma inexistente ou já excluída retorna `404`. |
+| `POST /api/classes/{classID}/student/add/{id}` | ADMIN | ID do aluno, sem corpo | `200 Class`. Define a turma atual do aluno, inclusive quando ele já pertence a outra turma. |
+| `POST /api/classes/{classID}/student/remove/{id}` | ADMIN | ID do aluno, sem corpo | `200 Class`. Limpa a turma atual do aluno somente se ela corresponder à turma informada. |
+| `POST /api/classes/{classID}/teacher/add/{id}` | ADMIN | ID do professor e `{disciplineIds:[…]}` opcional | `200 Class`. Cria ou reativa o vínculo do professor e vincula as disciplinas selecionadas na mesma transação. |
+| `POST /api/classes/{classID}/teacher/remove/{id}` | ADMIN | ID do professor, sem corpo | `200 Class`. Marca o vínculo entre professor e turma como excluído. Os vínculos das disciplinas com a turma permanecem ativos. |
+| `POST /api/classes/{classID}/discipline/add/{id}` | ADMIN | ID da disciplina, sem corpo | `200 Class`. Cria ou reativa o vínculo da disciplina. |
+| `POST /api/classes/{classID}/discipline/remove/{id}` | ADMIN | ID da disciplina, sem corpo | `200 Class`. Marca o vínculo da disciplina como excluído. |
 
-**Class** contains `id,name,academicYear,students,teachers,disciplines`. Each student has `id,name,email,present` (null in this view), each teacher has `id,name,email`, and each discipline has `id,name`. Membership updates return the resulting class. Some updates affect zero rows and still return it, so inspect membership when confirmation matters. [Class handlers](../../internal/api/classes.go)
+**Class** contém `id,name,academicYear,students,teachers,disciplines`. Cada aluno contém `id,name,email,present` (a frequência é nula nesta consulta). Cada professor contém `id,name,email` e cada disciplina contém `id,name`. As alterações de vínculo retornam a turma resultante. Algumas operações retornam a turma mesmo quando nenhuma linha é alterada. Confira os vínculos retornados quando precisar confirmar o resultado. [Operações de turma](../../internal/api/classes.go)
 
-When adding a teacher to an existing class, first list their linked disciplines. With exactly one available, an empty selection automatically uses that discipline. With several, supply at least one. Zero available subjects or an invalid selection returns `400 VALIDATION_ERROR` on `disciplineIds`. Duplicate IDs in a valid selection are collapsed. Initial class creation treats `teacherIds` and `disciplineIds` as independent assignments. [Teacher assignment](../../internal/api/class_teacher.go)
+Ao adicionar um professor a uma turma existente, consulte primeiro as disciplinas desse professor. Se houver uma única disciplina, uma seleção vazia a vincula automaticamente. Se houver várias, informe ao menos uma. A ausência de disciplinas disponíveis ou uma seleção inválida retorna `400 VALIDATION_ERROR` no campo `disciplineIds`. IDs repetidos em uma seleção válida são considerados uma única vez. Na criação inicial da turma, `teacherIds` e `disciplineIds` são listas independentes. [Vínculo de professor](../../internal/api/class_teacher.go)
 
-## Disciplines
+## Disciplinas
 
-| Operation | Access | Request | Response and behavior |
+| Operação | Acesso | Requisição | Resposta e comportamento |
 | --- | --- | --- | --- |
-| `GET /api/disciplines` | ADMIN, TEACHER | No filters | `200 Discipline[]`, sorted by name, up to 1,000 active subjects. |
-| `GET /api/disciplines/{id}` | ADMIN, TEACHER | Discipline ID | `200 Discipline` or `404`. |
-| `POST /api/disciplines` | ADMIN | `{name,description?,teacherIds?}` | `201 Discipline`. Requires a nonblank name. Duplicate name returns `400`. |
-| `PUT /api/disciplines/update/{id}` | ADMIN | `{name,description?,teachers?:[{teacherId,vinculado}]}` | `200 Discipline`. Each `true` flag links and each `false` flag unlinks that teacher. Omitted teachers keep their links. Omitted description becomes null. |
+| `GET /api/disciplines` | ADMIN, TEACHER | Sem filtros | `200 Discipline[]`, até 1.000 disciplinas ativas em ordem de nome. |
+| `GET /api/disciplines/{id}` | ADMIN, TEACHER | ID da disciplina | `200 Discipline` ou `404`. |
+| `POST /api/disciplines` | ADMIN | `{name,description?,teacherIds?}` | `201 Discipline`. Exige nome não vazio. Nome duplicado retorna `400`. |
+| `PUT /api/disciplines/update/{id}` | ADMIN | `{name,description?,teachers?:[{teacherId,vinculado}]}` | `200 Discipline`. O valor `true` vincula o professor e `false` remove o vínculo. Professores omitidos mantêm seus vínculos. Omitir a descrição atribui a ela o valor nulo. |
 
-**Discipline** contains `id,name,description,teachers`. The description is nullable and each teacher carries `id,name,email`. For example, to rename a subject and add teacher 17, send `{"name":"Matemática","description":"Álgebra","teachers":[{"teacherId":17,"vinculado":true}]}`. [Discipline handlers](../../internal/api/disciplines.go)
+**Discipline** contém `id,name,description,teachers`. A descrição pode ser nula e cada professor contém `id,name,email`. Para renomear uma disciplina e vincular o professor 17, por exemplo, envie `{"name":"Matemática","description":"Álgebra","teachers":[{"teacherId":17,"vinculado":true}]}`. [Operações de disciplina](../../internal/api/disciplines.go)

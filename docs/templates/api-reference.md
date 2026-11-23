@@ -1,31 +1,31 @@
-# [Subject] — API reference
+# [Assunto] — Referência da API
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Transport and identity
+## Transporte e identidade
 
-[Document base URL, media types, authentication and authorization scope.]
+[Documente a URL base, os tipos de mídia, a autenticação e o escopo da autorização.]
 
-## Operations
+## Operações
 
-[For each method/path give role, parameters or body, output, status and special cases.]
+[Para cada método e caminho, informe o perfil de acesso, os parâmetros ou corpo da requisição, a resposta, o status e as exceções.]
 
-| Method and path | Role and record scope | Request fields and constraints | Success status and response | Failure or compatibility exception |
+| Método e caminho | Perfil e escopo dos registros | Campos e restrições da requisição | Status e resposta de sucesso | Falha ou exceção de compatibilidade |
 | --- | --- | --- | --- | --- |
-| [Method and path] | [Role and record scope] | [Request fields and constraints] | [Success status and response] | [Failure or compatibility exception] |
+| [Método e caminho] | [Perfil e escopo dos registros] | [Campos e restrições da requisição] | [Status e resposta de sucesso] | [Falha ou exceção de compatibilidade] |
 
-## Examples
+## Exemplos
 
-[Provide a reproducible success and failure exchange with synthetic data.]
+[Mostre uma troca de requisição e resposta bem-sucedida e outra com falha. Use dados fictícios e exemplos reproduzíveis.]
 
-## Compatibility
+## Compatibilidade
 
-[Document pagination, envelopes, dates, deprecations and non-HTTP event contracts as applicable.]
+[Documente paginação, estrutura das respostas, datas, descontinuações e contratos de eventos fora do HTTP, quando aplicável.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

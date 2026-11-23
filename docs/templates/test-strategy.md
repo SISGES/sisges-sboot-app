@@ -1,27 +1,27 @@
-# [Subject] — Test strategy
+# [Assunto] — Estratégia de testes
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Risk and coverage
+## Riscos e cobertura
 
-[Map behaviors to suites, gaps and appropriate test environments.]
+[Relacione os comportamentos às suítes, às lacunas e aos ambientes de teste apropriados.]
 
-| Risk or requirement | Suite and fixtures | Verification command | Expected result | Coverage gap |
+| Risco ou requisito | Suíte e dados de teste | Comando de verificação | Resultado esperado | Lacuna de cobertura |
 | --- | --- | --- | --- | --- |
-| [Risk or requirement] | [Suite and fixtures] | [Verification command] | [Expected result] | [Coverage gap] |
+| [Risco ou requisito] | [Suíte e dados de teste] | [Comando de verificação] | [Resultado esperado] | [Lacuna de cobertura] |
 
-## Execution
+## Execução
 
-[Give exact working directory, fixtures, commands and expected result.]
+[Informe o diretório de trabalho, os dados de teste, os comandos exatos e o resultado esperado.]
 
-## Release evidence
+## Evidências para a entrega
 
-[Identify pass criteria, negative cases, records and gates that actually run.]
+[Identifique critérios de aprovação, casos de falha, registros e verificações obrigatórias que a esteira realmente executa.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

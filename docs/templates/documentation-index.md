@@ -1,27 +1,27 @@
-# [Subject] — Documentation index
+# [Assunto] — Índice da documentação
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Audience and scope
+## Público e escopo
 
-[Identify authoritative repositories and source baseline.]
+[Identifique os repositórios de referência e as revisões consultadas.]
 
-## Document map
+## Mapa da documentação
 
-[Group reader tasks and link every artifact and matching template.]
+[Agrupe as tarefas dos leitores e inclua links para cada documento e seu modelo.]
 
-| Reader task | Current document | Template | Responsible role |
+| Tarefa do leitor | Documento atual | Modelo | Responsável |
 | --- | --- | --- | --- |
-| [Reader task] | [Current document] | [Template] | [Responsible role] |
+| [Tarefa do leitor] | [Documento atual] | [Modelo] | [Responsável] |
 
-## Maintenance
+## Manutenção
 
-[Explain how to verify evidence, update linked contracts, and record a proposal.]
+[Explique como conferir as evidências, atualizar contratos relacionados e registrar propostas.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

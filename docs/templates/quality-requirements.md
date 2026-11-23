@@ -1,21 +1,21 @@
-# [Service or workflow] — Quality requirements
+# [Serviço ou fluxo] — Requisitos de qualidade
 
-Audience / owner role — [service owner and engineering roles]
+Público e responsável — [responsável pelo serviço e perfis de engenharia]
 
-Source baseline — [revisions, configuration, tests]
+Fontes de referência — [revisões, configuração e testes]
 
-## Operating envelope
+## Condições de operação
 
-| Quality attribute | Current behavior or measured baseline | Constraint or unknown |
+| Atributo de qualidade | Comportamento atual ou medição de referência | Restrição ou questão em aberto |
 | --- | --- | --- |
-| [Availability, capacity, latency, integrity, recovery or accessibility] | [Limit or measurement with units and source] | [Affected workload or boundary] |
+| [Disponibilidade, capacidade, latência, integridade, recuperação ou acessibilidade] | [Limite ou medição com unidade e fonte] | [Carga de trabalho ou limite afetado] |
 
-## Proposed acceptance
+## Critérios de aceite propostos
 
-| Scenario and representative load | What to measure | Who chooses the threshold and how to verify it |
+| Cenário e carga representativa | O que medir | Quem define o limite e como verificá-lo |
 | --- | --- | --- |
-| [Actor, population, arrival rate and dataset] | [Metric, denominator and window] | [Decision owner, repeatable experiment and pass condition] |
+| [Ator, população, taxa de chegada e conjunto de dados] | [Métrica, denominador e janela de medição] | [Responsável pela decisão, experimento reproduzível e condição de aprovação] |
 
-## Review triggers
+## Quando revisar
 
-[Name workloads, infrastructure changes or school commitments that invalidate these assumptions.]
+[Identifique cargas de trabalho, mudanças na infraestrutura ou compromissos com a escola que invalidem essas premissas.]

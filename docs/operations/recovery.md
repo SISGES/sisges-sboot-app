@@ -1,25 +1,25 @@
-# Service incidents, backup and restore
+# Incidentes, backup e restauração do serviço
 
-Audience — deployment operator, backend engineer and school data owner. The observations below follow the service code. The backup and response procedures are proposed operating practices. The repositories supply no backup schedule, on-call roster, incident notification window, recovery-point objective (RPO) or recovery-time objective (RTO).
+Público — responsáveis pela implantação, pela engenharia do backend e pelos dados da escola. A triagem toma como referência o comportamento do código. Os procedimentos de backup e resposta são práticas propostas. Os repositórios não definem calendário de backups, escala de plantão, prazo de comunicação de incidentes, objetivo de ponto de recuperação (RPO) ou objetivo de tempo de recuperação (RTO).
 
-## Triage by symptom
+## Triagem por sintoma
 
-| Signal | First check | Next action |
+| Sinal | Primeira verificação | Próxima ação |
 | --- | --- | --- |
-| API unavailable after deploy | Inspect container state and startup logs for configuration, DB connection, R2 initialization or a named migration failure. | Compare the new environment and image digest to the last working release. Preserve the failed SQL version and inspect migration history before retrying. |
-| Database check fails | `GET /health` performs a database ping with a one-second timeout. | Check PostgreSQL reachability, connection budget, latency and database availability. Confirm response body and origin so the SPA fallback cannot mask a failure. |
-| Invalid login appears successful in HTTP metrics | The login contract returns HTTP 200 with an application error for invalid credentials. | Use the result code and presence of a token in a synthetic probe. Keep passwords, tokens and bodies out of logs. |
-| File operations fail alone | Inspect storage configuration, target prefix, proxy body limit, temp directory and object response. | Compare the DB reference with the object inventory. A 503 on upload can indicate unconfigured storage. Validate with an authorized synthetic account. |
-| Timetable save rejected | Inspect the revision and class discipline assignments. | Re-read the schedule and reconcile drafts before saving. A retry with a stale revision cannot resolve the conflict. |
-| Feed content is stale | Check whether an HTTP refresh succeeds and whether the browser reached the correct WS host. | Check upgrade routing and per-process fan-out. Recover visible state with a fresh HTTP read. |
-| Potential exposure of school data | Record time, affected data category, service and scope privately. | Restrict affected access and involve the responsible operator and school contact. Use redacted identifiers in incident notes. Validate access before reopening the workflow. |
+| API indisponível após a implantação | Verifique o estado do contêiner e procure nos logs de inicialização erros de configuração, conexão com o banco, inicialização do R2 ou aplicação de uma migração específica. | Compare o ambiente e o digest da imagem com a última versão funcional. Registre a versão SQL que falhou e consulte o histórico de migrações antes de tentar novamente. |
+| Falha na verificação do banco | `GET /health` testa a conexão com o banco com tempo limite de um segundo. | Confira a conectividade com o PostgreSQL, a capacidade de conexões, a latência e a disponibilidade. Confirme o corpo e a origem da resposta para distinguir a verificação da API da página padrão da SPA. |
+| Login inválido aparece como sucesso nas métricas HTTP | O contrato de login retorna HTTP 200 com um erro da aplicação para credenciais inválidas. | Em um teste sintético, verifique o código do resultado e a presença do token. Exclua senhas, tokens e corpos das requisições e respostas dos logs. |
+| Apenas as operações de arquivo falham | Inspecione a configuração do armazenamento, o prefixo de destino, o limite de corpo no proxy, o diretório temporário e a resposta do serviço de objetos. | Compare a referência no banco com o inventário de objetos. HTTP 503 no envio pode indicar armazenamento sem configuração. Valide com uma conta sintética autorizada. |
+| Gravação da grade rejeitada | Confira a revisão e as disciplinas vinculadas à turma. | Consulte a grade atual e concilie os rascunhos antes de salvar. Repetir a requisição com a mesma revisão desatualizada mantém o conflito. |
+| Mural desatualizado | Verifique se uma nova leitura por HTTP funciona e se o navegador alcançou o host correto do WebSocket. | Confira o encaminhamento do upgrade e a distribuição de notificações por processo. Recupere o conteúdo visível com uma nova consulta HTTP. |
+| Possível exposição de dados escolares | Registre em canal restrito o horário, a categoria dos dados, o serviço e o alcance. | Restrinja o acesso afetado e envolva o operador responsável e o contato da escola. Oculte os identificadores nas anotações do incidente. Valide o acesso antes de reabrir o fluxo. |
 
-[Health and routing](../../internal/api/app.go) · [Error handling](../../internal/api/errors.go) · [Access and data handling](security-privacy.md)
+[Verificação de disponibilidade e rotas](../../internal/api/app.go) · [Tratamento de erros](../../internal/api/errors.go) · [Acesso e tratamento de dados](security-privacy.md)
 
-## Recovery drill for PostgreSQL and R2
+## Ensaio de recuperação do PostgreSQL e do R2
 
-1. Identify the source deployment, backup time, image digests and file-store account. Choose a compatible PostgreSQL version, an **empty isolated destination**, and a protected storage location for the archive. Coordinate a write pause or other consistent snapshot strategy when matching files to database records. A database transaction snapshot alone does not establish a recovery point across R2.
-2. With libpq credentials supplied privately, take a custom-format dump and inspect its contents. These Unix shell examples assume operator-set database names or connection references. The backup directory should be access-controlled and encrypted according to the deployment's policy.
+1. Identifique a implantação de origem, o horário do backup, os digests das imagens e a conta de armazenamento. Escolha uma versão compatível do PostgreSQL, um **destino vazio e isolado** e um local protegido para o arquivo de backup. Para conciliar arquivos e registros, coordene uma pausa nas gravações ou outra estratégia que produza uma cópia consistente. Um snapshot transacional do banco, por si só, não estabelece um ponto de recuperação que inclua o R2.
+2. Forneça as credenciais da libpq por um meio privado, gere um dump em formato personalizado e inspecione seu conteúdo. Os exemplos de shell Unix pressupõem que o operador já definiu os nomes dos bancos ou as referências de conexão. O diretório de backup deve ter controle de acesso e criptografia conforme a política da implantação.
 
    ```sh
    umask 077
@@ -27,8 +27,8 @@ Audience — deployment operator, backend engineer and school data owner. The ob
    pg_restore --list "$BACKUP_DIR/sisges.dump"
    ```
 
-3. Inventory and preserve object keys and versions or copies for `post-img/`, `profile-img/` and `lesson-files/`. Include private backups of the environment and deploy manifest through the operator's secret store. For a restore under a separate storage account, the binary still requires a bucket named `sisges-prd`.
-4. Provision the empty recovery database and restore into it. The example omits original ownership and grants so the operator can apply environment-specific roles in the isolated destination. Restore those grants separately before reconnecting the service.
+3. Faça um inventário e preserve as chaves e versões ou cópias dos objetos de `post-img/`, `profile-img/` e `lesson-files/`. Guarde também cópias privadas da configuração de ambiente e do manifesto de implantação no gerenciador de segredos da operação. Para restaurar em outra conta de armazenamento, o binário continua exigindo um bucket chamado `sisges-prd`.
+4. Prepare o banco de recuperação vazio e restaure a cópia nele. O exemplo omite proprietários e permissões originais para permitir a aplicação dos papéis adequados ao ambiente isolado. Restaure essas permissões separadamente antes de reconectar o serviço.
 
    ```sh
    pg_restore --exit-on-error --no-owner --no-acl \
@@ -37,11 +37,11 @@ Audience — deployment operator, backend engineer and school data owner. The ob
      -c 'SELECT version, name FROM sisges.go_schema_migrations ORDER BY version;'
    ```
 
-5. Compare row counts for school classes, users, meetings and grades with the source manifest. Reconcile successful historical Flyway entries if present. Start the matching API image with seed disabled, the restored database and the matching object set. Exercise health, login, class lookup, one timetable, a student's report and representative authorized file reads. Use a restricted test environment for any real school data.
-6. Record the verified recovery point, elapsed recovery time, unavailable objects and mismatched rows. Obtain the data owner's acceptance of the restored state and lost-write window before any production cutover. Retain the prior source during reconciliation and dispose of temporary copies under the approved retention policy.
+5. Compare as contagens de turmas, usuários, aulas e notas com o inventário da origem. Confira as migrações históricas bem-sucedidas do Flyway, se houver. Inicie a imagem correspondente da API com a carga de demonstração desabilitada, o banco restaurado e os objetos do mesmo ponto de recuperação. Teste a disponibilidade, o login, a consulta de turma, uma grade horária, o boletim de um aluno e leituras autorizadas de arquivos representativos. Use um ambiente de teste restrito para dados reais da escola.
+6. Registre o ponto de recuperação confirmado, o tempo decorrido, os objetos indisponíveis e as divergências entre registros. Antes de direcionar o tráfego de produção ao ambiente restaurado, obtenha a aceitação do responsável pelos dados quanto ao estado recuperado e ao intervalo de gravações perdidas. Preserve a origem anterior durante a conciliação e descarte cópias temporárias conforme a política de retenção aprovada.
 
-The repository has no down-migration runner. Every completed version remains committed when a later migration fails. Restoring only the binary, or only PostgreSQL after a file migration, may leave incompatible state. [Migration runner](../../internal/api/migrate.go) · [Data model](../architecture/data-model.md)
+O repositório não contém um executor de migrações reversas. Quando uma versão falha, todas as anteriores já concluídas permanecem aplicadas. Restaurar somente o binário ou somente o PostgreSQL depois de uma migração de arquivos pode deixar os componentes em estados incompatíveis. [Executor de migrações](../../internal/api/migrate.go) · [Modelo de dados](../architecture/data-model.md)
 
-## Operational evidence to collect
+## Evidências operacionais
 
-Record deployment and migration errors, API request rates and latency, failed auth outcomes, database connection pressure, object-store error rates, and time since the last successful restore drill. Treat alert thresholds and contact routing as decisions for the service owner. Logs and traces should omit URL query tokens, credentials, student grades, guardian contacts and file contents. The application emits process and request error logs. External metrics, redaction, alert routing and retention require deployment evidence.
+Registre erros de implantação e migração, volume e latência das requisições à API, falhas de autenticação, pressão sobre o pool de conexões, taxa de erros no armazenamento de objetos e tempo desde o último ensaio de restauração bem-sucedido. O responsável pelo serviço deve definir os limites de alerta e quem recebe as notificações. Logs e rastreamentos devem omitir tokens de parâmetros de URL, credenciais, notas de alunos, contatos dos responsáveis e conteúdo de arquivos. A aplicação registra erros de processo e de requisição. Métricas externas, ocultação de dados sensíveis, encaminhamento de alertas e retenção precisam ser verificados na implantação.

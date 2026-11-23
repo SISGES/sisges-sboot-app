@@ -1,37 +1,37 @@
-# Identity and directory
+# Identidade e diretório de pessoas
 
-Use the role-specific directory to obtain a teacher or student ID for enrollment, attendance and grade operations. A user ID identifies an account. A teacher ID or a student ID identifies a separate role record and can have a different numeric value. [Users and teachers](../../internal/api/users.go) · [Students](../../internal/api/students.go)
+Consulte o diretório específico do perfil para obter o ID de professor ou aluno usado em vínculos, frequência e notas. O ID de usuário identifica a conta de acesso. O registro de professor ou aluno tem ID próprio, que pode ser numericamente diferente. [Usuários e professores](../../internal/api/users.go) · [Alunos](../../internal/api/students.go)
 
-## Authentication and accounts
+## Autenticação e contas
 
-| Operation | Access | Request | Response and behavior |
+| Operação | Acesso | Requisição | Resposta e comportamento |
 | --- | --- | --- | --- |
-| `POST /api/auth/login` | Public | `{email,password}` | `200 {accessToken,tokenType:"Bearer",user}`. Email matching is trimmed and case-insensitive. Invalid credentials return HTTP 200 with an error object whose `status` is 401. |
-| `POST /api/auth/register` | ADMIN | `{name,password,birthDate,gender,role}`, plus student fields below | `201 User`. Allocates the register and email in one transaction. |
-| `GET /api/auth/validate` | Any | No body | `200`, empty body. |
-| `GET /api/users/me` | Any | No body | `200 User` for the account on the token. |
-| `PATCH /api/users/me` | ADMIN, TEACHER | Any of `name`, `password`, `currentPassword`, `profileImagePath` | `200 User`. Changing password requires the matching current password and at least eight bytes for the replacement. Name requires at least two trimmed bytes and at most 255 raw bytes. Empty image path clears the image. Student requests receive `403`. |
-| `GET /api/users/{id}` | ADMIN | User ID | `200 User` or `404`. |
-| `POST /api/users/search` | ADMIN | Optional `{name,email,register,gender,initialDate,finalDate}` | `200 [{id,name,email,role}]` sorted by name, up to 1,000 active accounts. Text filters for name/email/register use case-insensitive substring matching, gender is exact, birth-date bounds are inclusive. |
+| `POST /api/auth/login` | Público | `{email,password}` | `200 {accessToken,tokenType:"Bearer",user}`. A busca por e-mail desconsidera espaços nas extremidades e diferenças entre maiúsculas e minúsculas. Credenciais inválidas retornam HTTP 200 com um objeto de erro cujo `status` vale 401. |
+| `POST /api/auth/register` | ADMIN | `{name,password,birthDate,gender,role}` e, para alunos, os campos descritos abaixo | `201 User`. Gera a matrícula e o e-mail em uma única transação. |
+| `GET /api/auth/validate` | Qualquer perfil | Sem corpo | `200` com corpo vazio. |
+| `GET /api/users/me` | Qualquer perfil | Sem corpo | `200 User` com os dados da conta identificada pelo token. |
+| `PATCH /api/users/me` | ADMIN, TEACHER | Um ou mais de `name`, `password`, `currentPassword` e `profileImagePath` | `200 User`. Para trocar a senha, informe a senha atual correta e uma nova senha com pelo menos oito bytes. O nome deve ter no mínimo dois bytes após a remoção de espaços nas extremidades e no máximo 255 bytes antes dela. Um caminho de imagem vazio remove a imagem do perfil. Alunos recebem `403`. |
+| `GET /api/users/{id}` | ADMIN | ID de usuário | `200 User` ou `404`. |
+| `POST /api/users/search` | ADMIN | `{name,email,register,gender,initialDate,finalDate}` opcional | `200 [{id,name,email,role}]`, até 1.000 contas ativas em ordem de nome. Nome, e-mail e matrícula aceitam correspondência parcial sem distinção entre maiúsculas e minúsculas. Gênero exige correspondência exata. As duas datas delimitam o nascimento e são inclusivas. |
 
-**User** contains `id`, `name`, `email`, `register`, `role`, `birthDate`, `gender` and nullable `profileImagePath`. Registration requires a nonblank name, a password of at least six bytes, a parseable birth date, gender and one of the three role values. The server generates an `A`, `P` or `ADM` register and lowercase `@sisges.com` email. For `STUDENT`, send an existing `responsibleId` or `responsibleData` with `name`, `phone`, `email` and optional `alternativePhone` and `alternativeEmail`. Inline responsible data takes precedence when both are supplied. `classId` is optional. An unknown existing responsible returns `404`. [Account payloads and validations](../../internal/api/users.go)
+**User** contém `id`, `name`, `email`, `register`, `role`, `birthDate`, `gender` e `profileImagePath`, que pode ser nulo. O cadastro exige nome não vazio, senha de pelo menos seis bytes, data de nascimento válida, gênero e um dos três perfis. O servidor gera uma matrícula com prefixo `A`, `P` ou `ADM` e um e-mail em letras minúsculas no domínio `@sisges.com`. Para `STUDENT`, envie `responsibleId` de um responsável existente ou `responsibleData` com `name`, `phone`, `email` e, opcionalmente, `alternativePhone` e `alternativeEmail`. Quando ambos são fornecidos, prevalecem os dados do novo responsável. O campo `classId` é opcional. Um ID de responsável inexistente retorna `404`. [Campos e validações do cadastro](../../internal/api/users.go)
 
-For example, a signed-in administrator searching for student accounts born in an interval can submit the following body to `POST /api/users/search` and filter the returned `role` client-side. The search handler has no role filter.
+Por exemplo, um administrador autenticado pode enviar o corpo abaixo para `POST /api/users/search` para buscar contas pelo nome e intervalo de nascimento. Para exibir apenas alunos, filtre o `role` no cliente. A operação não oferece esse filtro.
 
 ```json
 {"name":"Ana","initialDate":"2010-01-01","finalDate":"2011-12-31"}
 ```
 
-## Teachers and students
+## Professores e alunos
 
-| Operation | Access | Request | Response and behavior |
+| Operação | Acesso | Requisição | Resposta e comportamento |
 | --- | --- | --- | --- |
-| `POST /api/teachers/search` | ADMIN | Optional `{name,email}` | `200 [{id,name,email}]` with teacher IDs. Partial case-insensitive matches, sorted by name, maximum 1,000. |
-| `GET /api/teachers/me` | TEACHER | No body | `200 Teacher` resolved by the signed-in user ID. |
-| `GET /api/teachers/{id}` | ADMIN | Teacher ID | `200 Teacher` or `404`. |
-| `POST /api/students/search` | ADMIN | Optional `{name,email}` | `200 [{id,name,email}]` with student IDs. Same matching, ordering and bound as teacher search. |
-| `GET /api/students/{id}` | ADMIN | Student ID | `200 Student` or `404`. Includes up to 1,000 attendance records, latest meeting date first. |
-| `GET /api/students/me/turma` | STUDENT | No body | `200 {className,academicYear,classmates,teachers}` for the student's active class. `404` if no active class. Classmates include the caller. |
-| `GET /api/students/me/faltas-por-disciplina` | STUDENT | No body | `200 [{disciplineName,absenceCount}]`. Counts recorded absences by discipline for this student, sorted by name. An empty list means no recorded absences. |
+| `POST /api/teachers/search` | ADMIN | `{name,email}` opcional | `200 [{id,name,email}]` com IDs de professor. Correspondência parcial sem distinção entre maiúsculas e minúsculas, ordem de nome e limite de 1.000. |
+| `GET /api/teachers/me` | TEACHER | Sem corpo | `200 Teacher`, identificado a partir da conta autenticada. |
+| `GET /api/teachers/{id}` | ADMIN | ID de professor | `200 Teacher` ou `404`. |
+| `POST /api/students/search` | ADMIN | `{name,email}` opcional | `200 [{id,name,email}]` com IDs de aluno. Mesmos filtros, ordenação e limite da busca de professores. |
+| `GET /api/students/{id}` | ADMIN | ID de aluno | `200 Student` ou `404`. Inclui até 1.000 registros de frequência, da data de aula mais recente à mais antiga. |
+| `GET /api/students/me/turma` | STUDENT | Sem corpo | `200 {className,academicYear,classmates,teachers}` para a turma ativa do aluno. Retorna `404` se não houver turma ativa. A lista de colegas inclui o próprio aluno. |
+| `GET /api/students/me/faltas-por-disciplina` | STUDENT | Sem corpo | `200 [{disciplineName,absenceCount}]`. Conta as faltas registradas para o aluno por disciplina, em ordem de nome. A lista fica vazia se não houver faltas registradas. |
 
-**Teacher** contains `id,name,email,register,birthDate,gender,classes`. Each class is `{id,name,academicYear}`. **Student** has the same identity fields and `currentClass` (nullable), `responsibles` (`id,name,phone,email`), and `attendances` (`present` plus `classMeeting:{disciplineName,meetingDate,createdAt}`). In the self-service class directory, teacher rows carry `id,name,email`. Classmate rows also contain `present`, returned as null in this view. [Teacher detail](../../internal/api/users.go) · [Student detail and self-service](../../internal/api/students.go)
+**Teacher** contém `id,name,email,register,birthDate,gender,classes`. Cada turma contém `{id,name,academicYear}`. **Student** tem os mesmos campos de identificação, `currentClass` (pode ser nulo), `responsibles` (`id,name,phone,email`) e `attendances` (`present` e `classMeeting:{disciplineName,meetingDate,createdAt}`). Na consulta da própria turma, cada professor tem `id,name,email`. Os registros dos colegas incluem também `present`, nulo nessa consulta. [Detalhes do professor](../../internal/api/users.go) · [Detalhes e consultas do aluno](../../internal/api/students.go)

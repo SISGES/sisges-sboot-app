@@ -1,27 +1,27 @@
-# [Subject] — SaaS readiness register
+# [Assunto] — Registro de prontidão do SaaS
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Scope and decision rule
+## Escopo e critério de decisão
 
-[Define the launch boundary and evidence that changes status.]
+[Defina o escopo do lançamento e a evidência necessária para alterar sua situação.]
 
-## Capability register
+## Avaliação por capacidade
 
-[For each capability list current evidence, impact, next decision and suggested owner.]
+[Para cada capacidade, registre as evidências atuais, o impacto, a próxima decisão e o responsável sugerido.]
 
-| Capability | Current evidence and gap | Customer impact | Decision owner | Acceptance evidence |
+| Capacidade | Evidência atual e lacuna | Impacto para a escola | Responsável pela decisão | Evidência de aceite |
 | --- | --- | --- | --- | --- |
-| [Capability] | [Current evidence and gap] | [Customer impact] | [Decision owner] | [Acceptance evidence] |
+| [Capacidade] | [Evidência atual e lacuna] | [Impacto para a escola] | [Responsável pela decisão] | [Evidência de aceite] |
 
-## Acceptance and sequencing
+## Aceite e ordem de implantação
 
-[State dependency order, acceptance evidence and unresolved commitments.]
+[Registre a ordem das dependências, as evidências de aceite e os compromissos pendentes.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

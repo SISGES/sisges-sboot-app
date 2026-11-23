@@ -1,31 +1,31 @@
-# [Subject] — Security and privacy review
+# [Assunto] — Análise de segurança e privacidade
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Assets and boundaries
+## Ativos e limites de acesso
 
-[Identify identities, sensitive data, stores, readers and writers.]
+[Identifique as identidades, os dados sensíveis, os locais de armazenamento e quem pode ler ou gravar.]
 
-## Controls and evidence
+## Controles e evidências
 
-[Trace identity, object scope, transport, secret and logging controls to source.]
+[Indique onde estão implementados os controles de identidade, acesso a registros, transporte, segredos e logs.]
 
-## Risks and treatment
+## Riscos e tratamento
 
-[State exposure, proposed mitigation, owner role and acceptance evidence.]
+[Descreva a exposição, a mitigação proposta, o responsável e a evidência de aceite.]
 
-| Asset or boundary | Current control and evidence | Residual risk | Proposed treatment and owner | Acceptance evidence |
+| Ativo ou limite de acesso | Controle atual e evidência | Risco residual | Tratamento proposto e responsável | Evidência de aceite |
 | --- | --- | --- | --- | --- |
-| [Asset or boundary] | [Current control and evidence] | [Residual risk] | [Proposed treatment and owner] | [Acceptance evidence] |
+| [Ativo ou limite de acesso] | [Controle atual e evidência] | [Risco residual] | [Tratamento proposto e responsável] | [Evidência de aceite] |
 
-## Lifecycle and open decisions
+## Ciclo de vida e decisões pendentes
 
-[Cover access review, retention, deletion and incident handling.]
+[Cubra revisão de acessos, retenção, exclusão e tratamento de incidentes.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

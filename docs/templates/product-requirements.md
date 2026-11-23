@@ -1,35 +1,35 @@
-# [Subject] — Product requirements
+# [Assunto] — Requisitos do produto
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Outcome and users
+## Resultado e usuários
 
-[State the school workflow, actor and observable outcome.]
+[Descreva o fluxo escolar, quem o executa e qual resultado pode ser observado.]
 
-## Scope and delivery status
+## Escopo e situação da entrega
 
-[Separate shipped workflows, constraints and proposed SaaS capabilities.]
+[Identifique os fluxos entregues, suas restrições e as capacidades propostas para o SaaS.]
 
-## Requirements and acceptance
+## Requisitos e critérios de aceite
 
-[Assign stable IDs. Record actor, business rule and observable pass condition.]
+[Atribua identificadores estáveis e registre o ator, a regra de negócio e o resultado que comprova o atendimento.]
 
-| Requirement ID | Actor and outcome | Delivery status | Observable acceptance | Specification or evidence |
+| ID do requisito | Ator e resultado | Situação da entrega | Critério de aceite observável | Especificação ou evidência |
 | --- | --- | --- | --- | --- |
-| [Requirement ID] | [Actor and outcome] | [Delivery status] | [Observable acceptance] | [Specification or evidence] |
+| [ID do requisito] | [Ator e resultado] | [Situação da entrega] | [Critério de aceite observável] | [Especificação ou evidência] |
 
-## Success measures
+## Indicadores de sucesso
 
-[Identify signals, collection points, proposed targets and whether measurement exists.]
+[Indique o que medir, onde coletar os dados, as metas propostas e se a medição já existe.]
 
-## Dependencies and decisions
+## Dependências e decisões
 
-[Name decisions, dependencies and accountable roles.]
+[Identifique decisões, dependências e os responsáveis por cada uma.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

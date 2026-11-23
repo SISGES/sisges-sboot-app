@@ -1,52 +1,52 @@
-# SISGES product requirements
+# Requisitos de produto do SISGES
 
-**Audience** · School operations, product, engineering and QA
+**Público** · Gestão escolar, produto, engenharia e garantia da qualidade (QA)
 
-**Baseline** · Backend `6b37a18` and frontend `b58d2df`. Statuses describe the source at these revisions. Production rollout, school adoption and service-level targets require separate evidence.
+**Versões de referência** · Backend `6b37a18` e frontend `b58d2df`. A situação de cada requisito descreve o código nessas revisões. A implantação em produção, a adoção pelas escolas e as metas de nível de serviço exigem evidências próprias.
 
-## Outcome and users
+## Objetivo e usuários
 
-A school administrator sets up people, cohorts, subjects and teaching assignments. A teacher converts a scheduled period into a lesson record and marks attendance. A student sees the resulting absences, school communications and released grades. The current schema and application use one academic cycle and grading configuration per database. The product decision for serving multiple independent schools is open.
+O administrador cadastra pessoas, organiza turmas e disciplinas e atribui aulas aos professores. O professor registra a aula prevista na grade e faz a chamada. O aluno consulta as faltas registradas, os comunicados da escola e as notas liberadas. O modelo de dados e a aplicação atuais usam um ciclo letivo e uma configuração de notas por banco de dados. A estratégia para atender várias escolas independentes continua em aberto.
 
-| Actor | Job to be done | Entry points |
+| Papel | O que precisa fazer | Onde atua |
 | --- | --- | --- |
-| Administrator | Prepare a cohort for instruction, maintain grading settings, oversee lessons, and publish events and notices | Administrative pages, lesson list, event management and home feed |
-| Teacher | Find assigned periods, record content and attendance, distribute study material, enter and release grades | Aulas, Materiais, home feed and the gradebook route |
-| Student | Find classmates and teachers, review work, track absences and see released grades | Home, Minha turma, Faltas and Boletim |
-| Responsible adult | Supply contact information for a student at enrollment | A guardian contact record linked to the student. The implemented sign-in roles are ADMIN, TEACHER and STUDENT. |
+| Administrador | Preparar turmas, configurar as regras de notas, acompanhar aulas e publicar eventos e avisos | Telas administrativas, lista de aulas, gestão de eventos e mural do Início |
+| Professor | Consultar horários atribuídos, registrar conteúdo e frequência, distribuir material de estudo, lançar e liberar notas | Aulas, Materiais, mural do Início e rota de lançamento de notas |
+| Aluno | Encontrar colegas e professores, consultar atividades, acompanhar faltas e ver as notas liberadas | Início, Minha turma, Faltas e Boletim |
+| Responsável | Informar seus dados de contato na matrícula do aluno | Cadastro de responsável vinculado ao aluno. Os papéis que permitem entrar no sistema são ADMIN, TEACHER e STUDENT. |
 
-The UI uses Portuguese labels. *Turma* means a cohort, *disciplina* a subject, *aula* a dated lesson, *frequência* attendance, and *boletim* the student report card. `academicYear` on a cohort denotes the grade level. The academic cycle represents the year currently being administered. [UI navigation](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/config/navConfig.ts) · [HTTP routing](../../internal/api/app.go)
+Na interface, a *turma* agrupa os alunos, a *disciplina* identifica o componente curricular e a *aula* é um encontro em uma data específica. A *frequência* registra presenças e faltas, e o *boletim* reúne as notas do aluno. O campo `academicYear` da turma identifica a série. O ciclo letivo representa o ano que a escola está administrando. [Navegação da interface](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/config/navConfig.ts) · [Rotas HTTP](../../internal/api/app.go)
 
-## Requirements and acceptance
+## Requisitos e critérios de aceite
 
-“Implemented” means the identified caller and handler support the path. “Partial” identifies a concrete handoff that still needs work. Scenarios in the specifications below can be used as release checks on synthetic school data.
+“Implementado” indica que o componente que faz a chamada e a operação que a recebe dão suporte ao fluxo. “Parcial” indica uma etapa concreta de integração pendente. Os cenários das especificações abaixo podem servir para verificar uma versão com dados escolares fictícios.
 
-| ID | Capability and acceptance | Delivery | Specification |
+| ID | Funcionalidade e critério de aceite | Situação | Especificação |
 | --- | --- | --- | --- |
-| P-01 | An administrator registers a student with a new guardian. The returned school-issued email can be used to sign in and open the student portal. | Implemented for enrollment with a new guardian and initial sign-in. Existing-guardian lookup and session restoration have client/server mismatches. | [School administration](school-administration.md) |
-| P-02 | An administrator assigns a student, teachers and subjects to a cohort. Its current roster and assignments can be read back. | Implemented | [School administration](school-administration.md) |
-| P-03 | An administrator publishes the weekly subject timetable. A stale schedule save leaves the newer revision intact. | Implemented | [Teaching and attendance](teaching-and-attendance.md) |
-| P-04 | A teacher records an assigned slot and submits attendance. Re-saving the lesson preserves its ID, attendance and activities. | Implemented. Lesson attachments depend on object storage. | [Teaching and attendance](teaching-and-attendance.md) |
-| P-05 | A teacher publishes a study material to the assigned subject and cohort. The enrolled student sees it on home. | Implemented for text/metadata. The file picker uses an unsupported upload destination. | [Teaching and attendance](teaching-and-attendance.md) |
-| P-06 | Staff create a scored activity, save grades and release them. A student sees only released scores in the report. | Partial. The API supports the sequence, while the lesson form omits mandatory points and the gradebook lacks an entry link. | [Grading and progression](grading-and-progression.md) |
-| P-07 | An administrator configures grading, advances terms and closes the year after pending releases are resolved. Results and eligible promotions are recorded. | Grading configuration has a screen. Cycle transitions are API operations. Subsequent-year processing has a known limitation. | [Grading and progression](grading-and-progression.md) |
-| P-08 | Staff publish time-limited announcements, signed-in users interact with them, and administrators schedule events for selected audiences. | Implemented with distinct feed and event audience rules. | [Communications and student portal](communications-and-student-portal.md) |
-| P-09 | A student views the current class directory, absences by subject, class materials and a personal report card. | Implemented. Some views depend on a current cohort and released grades. | [Communications and student portal](communications-and-student-portal.md) |
+| P-01 | O administrador cadastra um aluno com um novo responsável. O e-mail escolar retornado permite entrar e abrir o portal do aluno. | Matrícula com novo responsável e primeiro acesso implementados. Há incompatibilidades entre cliente e servidor na busca de responsável existente e na restauração de sessão. | [Administração escolar](school-administration.md) |
+| P-02 | O administrador vincula um aluno, professores e disciplinas a uma turma. É possível consultar a composição atual da turma e seus vínculos. | Implementado | [Administração escolar](school-administration.md) |
+| P-03 | O administrador publica a grade semanal de disciplinas. Uma tentativa de salvar uma revisão desatualizada preserva a mais recente. | Implementado | [Aulas e frequência](teaching-and-attendance.md) |
+| P-04 | O professor registra uma aula em um horário atribuído e lança a frequência. Salvar novamente preserva o ID da aula, a frequência e as atividades. | Implementado. Os anexos dependem do armazenamento de objetos. | [Aulas e frequência](teaching-and-attendance.md) |
+| P-05 | O professor publica material para uma disciplina e uma turma às quais está vinculado. O aluno matriculado vê o material no Início. | Implementado para texto e metadados. O seletor de arquivos usa um destino de envio sem suporte. | [Aulas e frequência](teaching-and-attendance.md) |
+| P-06 | A equipe cria uma atividade com pontuação, salva as notas e faz a liberação. O aluno vê no boletim somente as notas liberadas. | Parcial. A API cobre as etapas, mas o formulário da aula omite a pontuação obrigatória e falta um link para a tela de lançamento. | [Avaliação e progressão](grading-and-progression.md) |
+| P-07 | O administrador configura a avaliação, avança os trimestres e encerra o ano após resolver as liberações pendentes. O sistema registra os resultados e as promoções cabíveis. | Há uma tela de configuração de notas. As transições do ciclo são operações da API. O processamento de anos seguintes tem uma limitação conhecida. | [Avaliação e progressão](grading-and-progression.md) |
+| P-08 | A equipe publica avisos com prazo de exibição, os usuários autenticados interagem com eles e o administrador agenda eventos para públicos específicos. | Implementado. Mural e eventos têm regras de público distintas. | [Comunicação e portal do aluno](communications-and-student-portal.md) |
+| P-09 | O aluno consulta o diretório da turma atual, as faltas por disciplina, os materiais e o próprio boletim. | Implementado. Algumas consultas dependem de matrícula em uma turma e da liberação das notas. | [Comunicação e portal do aluno](communications-and-student-portal.md) |
 
-## Success measures
+## Indicadores de sucesso
 
-The following are proposed ways to judge a school pilot. Numerical targets and reporting cadence require school and product agreement. The reviewed applications supply operational records for these calculations but do not ship a pilot analytics dashboard.
+Os indicadores a seguir são propostas para avaliar um piloto escolar. A escola e a equipe de produto precisam acordar metas numéricas e a frequência dos relatórios. As aplicações fornecem registros operacionais para os cálculos. Não há painel de indicadores do piloto nas versões analisadas.
 
-| Question | Proposed measure and source | Interpretation |
+| Pergunta | Medida proposta e fonte | Interpretação |
 | --- | --- | --- |
-| Can teachers complete the register? | Within an agreed teaching week, compare dated scheduled periods with recorded lessons, then compare current roster size with marked attendance rows per lesson. | Exclude cancelled periods, holidays and roster changes using school-confirmed records. The weekly timetable is mutable. |
-| Can staff finish grading in time? | Count unreleased active activities per trimester at the agreed closing date. Use the pending-release API to identify teachers to contact. | A released activity can still contain blank scores. Track blanks separately with authorized gradebook access. |
-| Can students find the academic information they need? | During a supervised pilot, ask an enrolled student to find a named subject’s absence count and a released score. Record task completion without collecting grades in analytics. | Review where learners need help distinguishing pending, blank and zero scores. |
+| Os professores conseguem concluir a chamada? | Para uma semana letiva acordada, comparar os horários previstos em cada data com as aulas registradas. Depois, comparar a quantidade de alunos da turma com os lançamentos de frequência por aula. | Usar registros confirmados pela escola para descontar aulas canceladas, feriados e mudanças de matrícula. A grade semanal pode mudar. |
+| A equipe consegue concluir os lançamentos no prazo? | Contar as atividades ativas de cada trimestre que ainda aguardam liberação na data de fechamento acordada. Consultar as liberações pendentes na API para identificar os professores a contatar. | Uma atividade liberada pode conter notas em branco. Acompanhar esses casos separadamente com acesso autorizado à tela de lançamento. |
+| Os alunos encontram a informação acadêmica de que precisam? | Em um piloto supervisionado, pedir a um aluno matriculado que localize as faltas de uma disciplina indicada e uma nota liberada. Registrar a conclusão da tarefa sem coletar notas para análise de uso. | Observar quando o aluno precisa de ajuda para distinguir nota pendente, nota em branco e zero. |
 
-## Dependencies and decisions
+## Dependências e decisões
 
-The school supplies its roster, subject assignments, grading policy and destination cohorts for progression. Engineering supplies a migrated database, configured API/client and object storage for file features. Before a commercial launch, product and school leadership must agree on the enrollment boundary, grading rules and academic history, while operators establish recovery and support responsibilities. [SaaS readiness register](saas-readiness.md)
+A escola fornece as listas de alunos, os vínculos de disciplinas, a política de avaliação e as turmas de destino para a progressão. A engenharia fornece o banco com as migrações aplicadas, API e cliente configurados e armazenamento de objetos para os recursos com arquivos. Antes do lançamento comercial, produto e direção escolar precisam definir o escopo da matrícula, as regras de avaliação e o histórico acadêmico. A operação precisa definir as responsabilidades por recuperação e suporte. [Registro de preparação para SaaS](saas-readiness.md)
 
-## Review triggers
+## Quando revisar
 
-Revisit affected requirement IDs when a role, portal route, academic transition, file destination, supported term structure or school-isolation model changes. Update the corresponding acceptance cases and the readiness register in the same change.
+Revisar os requisitos afetados sempre que mudar um papel, uma rota do portal, uma transição acadêmica, um destino de arquivos, a organização dos períodos letivos ou o modelo de isolamento entre escolas. Na mesma alteração, atualizar os cenários de aceite e o registro de preparação para SaaS.

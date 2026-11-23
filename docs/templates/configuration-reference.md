@@ -1,23 +1,23 @@
-# [Component] configuration reference
+# [Componente] — Referência de configuração
 
-Audience and scope — [developer or operator, service and environment]
+Público e escopo — [desenvolvedor ou operador, serviço e ambiente]
 
-Source baseline — [loader, deployment manifest and build revision]
+Fontes de referência — [código que lê a configuração, manifesto de implantação e revisão da compilação]
 
-## Configuration contract
+## Contrato de configuração
 
-| Setting | Read at build or runtime | Units, default and valid range | Required together with | Effect on the service |
+| Configuração | Lida na compilação ou na execução | Unidade, valor padrão e intervalo válido | Dependências obrigatórias | Efeito no serviço |
 | --- | --- | --- | --- | --- |
-| [Name] | [When] | [Value or requirement] | [Dependency] | [Observable effect, including invalid or empty input] |
+| [Nome] | [Momento da leitura] | [Valor ou requisito] | [Dependência] | [Efeito observável, inclusive para valores inválidos ou vazios] |
 
-## Deployment differences
+## Diferenças entre ambientes
 
-[Compare application defaults, image values and deployment overrides. Describe how to supply secret values using references or synthetic examples.]
+[Compare os padrões da aplicação, os valores da imagem e as substituições feitas na implantação. Explique como fornecer segredos usando referências ou exemplos fictícios.]
 
-## Verification
+## Verificação
 
-[Give a safe observable check for this configuration and the symptom to expect if it fails. Identify which changes require a rebuild, restart or coordinated rotation.]
+[Descreva uma verificação segura e observável e o sintoma esperado em caso de falha. Indique quais alterações exigem recompilação, reinicialização ou rotação coordenada de credenciais.]
 
-## Review triggers
+## Quando revisar
 
-[Update when the loader, build arguments, deployment manifest or downstream contract changes.]
+[Atualize quando mudar a leitura da configuração, os argumentos de compilação, o manifesto de implantação ou o contrato de um componente consumidor.]

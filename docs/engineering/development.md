@@ -1,17 +1,17 @@
-# Run SISGES locally
+# Como executar o SISGES localmente
 
-The two repositories build independently. The steps below start PostgreSQL and the Go API with the backend Compose file and serve the React client with Vite. They use disposable school data and require Git, Docker with Compose, and Node with npm. The frontend Dockerfile uses Node 20. Use a Node release supported by the locked dependencies when developing on the host. [Backend Compose](../../docker-compose.yml) · [Frontend build](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/Dockerfile)
+Os dois repositórios têm compilações independentes. Para desenvolver com dados escolares descartáveis, inicie o PostgreSQL e a API Go com o arquivo Compose do backend e execute o cliente React com o Vite. É preciso ter Git, Docker com Compose e Node com npm. O Dockerfile do frontend usa Node 20. Para executar o cliente diretamente na máquina, use uma versão do Node compatível com as dependências fixadas no projeto. [Compose do backend](../../docker-compose.yml) · [Compilação do frontend](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/Dockerfile)
 
-## Start a development session
+## Iniciar uma sessão de desenvolvimento
 
-1. In an empty parent directory, clone both repositories with the sibling names expected by Compose.
+1. Em um diretório vazio, clone os repositórios lado a lado com os nomes esperados pelo Compose.
 
    ```sh
    git clone https://github.com/SISGES/sisges-sboot-app.git backend
    git clone https://github.com/SISGES/sisges-react-app.git frontend
    ```
 
-2. From the parent, start the API and its database. The backend Compose file enables the demonstration seed and exposes the API on port 8080. It keeps PostgreSQL on the Compose network.
+2. No diretório que contém os dois repositórios, inicie a API e o banco. O Compose do backend carrega os dados de demonstração, publica a API na porta 8080 e mantém o PostgreSQL na rede dos contêineres.
 
    ```sh
    docker compose -f backend/docker-compose.yml up -d --build backend
@@ -19,22 +19,22 @@ The two repositories build independently. The steps below start PostgreSQL and t
    curl --fail http://localhost:8080/health
    ```
 
-   Startup applies migrations first. Once the API is ready, health returns `{"status":"ok"}`. If startup fails, inspect the API container logs for a configuration, database or migration error. An empty R2 endpoint allows workflows without attachments.
+   Na inicialização, a API aplica as migrações. Quando estiver pronta, a verificação de saúde retornará `{"status":"ok"}`. Se ela não iniciar, consulte os logs do contêiner da API para identificar erros de configuração, banco ou migração. Com o endereço do R2 vazio, os fluxos que dispensam anexos continuam disponíveis.
 
-3. In a second terminal, from the frontend checkout, run the client on the origin allowed by the backend Compose file.
+3. Em outro terminal, abra o diretório do frontend e execute o cliente na origem permitida pelo Compose do backend.
 
    ```sh
    npm ci
    VITE_API_BASE_URL=http://localhost:8080/api npm run dev -- --port 3001 --strictPort
    ```
 
-   Open `http://localhost:3001`. The local demonstration admin is `adm0001@sisges.com` with password `admin123`. Sample teacher and student emails come from the development seed. These accounts and the Compose signing key are fixtures for local use. Vite's configured default is port 3000, which requires a matching API CORS configuration for direct cross-origin requests. [Seed](../../internal/api/seed.go) · [Vite config](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/vite.config.ts)
+   Acesse `http://localhost:3001`. A conta de administração da demonstração é `adm0001@sisges.com`, com a senha `admin123`. A carga inicial também cria endereços de exemplo para professores e alunos. Essas contas e a chave de assinatura do Compose destinam-se ao ambiente local. A porta padrão do Vite é 3000. Para usá-la em chamadas diretas entre origens, ajuste a configuração de CORS da API. [Carga inicial](../../internal/api/seed.go) · [Configuração do Vite](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/vite.config.ts)
 
-4. Stop Vite with Ctrl-C. From the parent, stop the containers with `docker compose -f backend/docker-compose.yml down`. The named volume preserves school data between sessions. For a fresh fixture, start a separately named Compose project with an empty volume after freeing the host ports.
+4. Interrompa o Vite com Ctrl+C. No diretório que contém os repositórios, encerre os contêineres com `docker compose -f backend/docker-compose.yml down`. O volume nomeado preserva os dados entre sessões. Para começar com dados novos, libere as portas e inicie outro projeto Compose com um nome diferente e um volume vazio.
 
-## Run the Go service on the host
+## Executar o serviço Go diretamente na máquina
 
-Use Go 1.24 or later with a dedicated PostgreSQL database reachable from the host. The user needs permission to create the `sisges` schema, tables and indexes. Create a local signing key and run from the backend checkout so the migration directory resolves.
+Use Go 1.24 ou superior e um banco PostgreSQL dedicado e acessível pela máquina. O usuário do banco precisa de permissão para criar o esquema `sisges`, as tabelas e os índices. Gere uma chave de assinatura local e execute os comandos na raiz do backend para que o serviço encontre o diretório de migrações.
 
 ```sh
 export DATABASE_URL='postgresql://localhost/sisges_dev?sslmode=disable'
@@ -43,15 +43,15 @@ export SISGES_SEED_ENABLED=true
 go run ./cmd/sisges
 ```
 
-Supply the connection credentials through your local PostgreSQL configuration or environment. The default backend Compose database has no published port. The original two-repository workspace also has a parent-level `compose.yaml` that publishes port 5432. Standalone clones can use the tracked backend Compose file in the first procedure. [Configuration reference](../operations/configuration.md)
+Forneça as credenciais pela configuração local do PostgreSQL ou por variáveis de ambiente. O Compose do backend mantém a porta do banco restrita à rede dos contêineres. O ambiente original com os dois repositórios também contém um `compose.yaml` no diretório pai que publica a porta 5432. Para clones independentes, use o arquivo Compose versionado no backend conforme o primeiro procedimento. [Referência de configuração](../operations/configuration.md)
 
-## Integration issues to recognize
+## Diagnóstico de problemas de integração
 
-| Symptom | Check |
+| Sintoma | O que verificar |
 | --- | --- |
-| Browser rejects cross-origin API calls | Match the browser's exact protocol, host and port to the configured allowed origins. Rebuild the client image after a build-time URL change. |
-| Containerized frontend exits with an upstream resolution error | The Nginx config names `sisges-backend`. The tracked development Compose service is named `backend`. Use the Vite procedure above, or provide the matching network alias in your local Compose override. |
-| Refresh returns a signed-in browser to login | At the documented baseline, the API validation response is an empty 200 and the client GET helper attempts JSON parsing. Treat reload as a separate integration check. |
-| Health is green and a file upload fails | Health checks the database. Uploads also require a configured R2 account endpoint, signing credentials, writable temp space, an accepted destination and a supported file type. |
+| O navegador bloqueia chamadas à API entre origens | Confira se protocolo, nome do host e porta correspondem exatamente a uma origem permitida. Se alterar a URL usada na compilação, gere uma nova imagem do cliente. |
+| O contêiner do frontend encerra com erro ao resolver o servidor de destino | O Nginx procura `sisges-backend`, mas o serviço no Compose de desenvolvimento se chama `backend`. Use o procedimento com Vite ou configure esse alias de rede em uma substituição local do Compose. |
+| Ao recarregar a página, o usuário volta para o login | Na revisão documentada, a validação da API retorna HTTP 200 com corpo vazio e o cliente tenta interpretar a resposta GET como JSON. Teste o recarregamento separadamente no fluxo integrado. |
+| A verificação de saúde passa, mas o envio de arquivo falha | A verificação consulta o banco. O envio também exige um endereço de conta R2 configurado, credenciais de assinatura, espaço temporário com permissão de escrita, destino permitido e tipo de arquivo aceito. |
 
-[API client guide](frontend.md) · [Troubleshooting and recovery](../operations/recovery.md)
+[Guia do cliente da API](frontend.md) · [Diagnóstico e recuperação](../operations/recovery.md)

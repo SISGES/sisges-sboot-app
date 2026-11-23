@@ -1,44 +1,44 @@
-# SISGES API reference
+# Referência da API do SISGES
 
-For client developers integrating with the Go API. This reference describes the handlers at backend revision `6b37a18`. Each operation below uses the full path on the API host (locally `http://localhost:8080`). Class and lesson IDs are different resources. `/api/classes` addresses school cohorts and `/api/class` addresses individual class meetings. [Router](../../internal/api/app.go)
+Esta referência descreve os contratos da API em Go na revisão `6b37a18` do backend. Cada operação usa o caminho completo no servidor da API (localmente, `http://localhost:8080`). Turmas e aulas têm identificadores próprios. `/api/classes` identifica turmas e `/api/class` identifica aulas em datas específicas. [Roteador](../../internal/api/app.go)
 
-| Client task | Reference |
+| Tarefa de integração | Referência |
 | --- | --- |
-| Sign in, manage accounts, find teachers and students | [Identity and directory](identity.md) |
-| Organize classes, subjects and teaching assignments | [Classes and disciplines](classes.md) |
-| Save the weekly timetable, record a lesson or mark attendance | [Lessons and attendance](lessons.md) |
-| Issue activities, release scores, close a term or read a report | [Assessment and academic cycle](assessment.md) |
-| Publish notices, use likes and comments, distribute materials or events | [School communications](communications.md) |
-| Transfer files or subscribe to feed updates | [Files and live feed](files-and-feed.md) |
+| Entrar, gerenciar contas e encontrar professores e alunos | [Identidade e diretório](identity.md) |
+| Organizar turmas, disciplinas e vínculos docentes | [Turmas e disciplinas](classes.md) |
+| Salvar a grade horária, registrar uma aula ou marcar a frequência | [Aulas e frequência](lessons.md) |
+| Criar atividades, liberar notas, encerrar um trimestre ou consultar o boletim | [Avaliação e ciclo letivo](assessment.md) |
+| Publicar avisos, curtir, comentar, distribuir materiais e divulgar eventos | [Comunicação escolar](communications.md) |
+| Transferir arquivos ou assinar atualizações do mural | [Arquivos e notificações do mural](files-and-feed.md) |
 
-## Transport and identity
+## Transporte e autenticação
 
-Use `Content-Type: application/json` for JSON writes, and send a single object. Go limits JSON request bodies to 1 MiB. Most reads return JSON objects or arrays directly. IDs are integers and path IDs must be positive. Calendar dates use `YYYY-MM-DD`. Timestamp fields include a timezone offset or `Z`. The HTTP service has no version segment. [Request handling](../../internal/api/app.go)
+Nas operações de escrita em JSON, envie um único objeto com `Content-Type: application/json`. O servidor limita o corpo da requisição a 1 MiB. A maioria das consultas retorna diretamente um objeto ou uma lista em JSON. Os IDs são inteiros e, no caminho da URL, devem ser positivos. As datas seguem `YYYY-MM-DD`. Campos com data e hora incluem o deslocamento de fuso horário ou `Z`. Os caminhos HTTP não incluem um segmento de versão. [Tratamento de requisições](../../internal/api/app.go)
 
-Send `Authorization: Bearer <accessToken>` on protected HTTP requests. The server checks the token signature and expiry and verifies the user's current email, role and active account against the database. Sign in again when the token expires. Roles in the tables use their literal API values. **Any** means any authenticated role. Clients should use TLS for remote deployments and handle a rejected session before retrying a user action. [Authentication](../../internal/api/auth.go)
+Envie `Authorization: Bearer <accessToken>` nas chamadas HTTP protegidas. O servidor verifica a assinatura e a validade do token e confere no banco se a conta está ativa e se o e-mail e o perfil ainda correspondem aos do token. Faça login novamente quando o token expirar. As tabelas usam os valores literais dos perfis da API. **Qualquer perfil** significa qualquer usuário autenticado. Em ambientes remotos, use TLS e trate a rejeição da sessão antes de repetir uma ação do usuário. [Autenticação](../../internal/api/auth.go)
 
-| Operation | Access | Inputs and success |
+| Operação | Acesso | Entrada e resposta |
 | --- | --- | --- |
-| `GET /health` | Public | No body. `200 {"status":"ok"}` after a database ping with a one-second timeout. Database failure returns `500`. |
+| `GET /health` | Público | Sem corpo. Retorna `200 {"status":"ok"}` após verificar a conexão com o banco, com tempo limite de um segundo. Uma falha no banco retorna `500`. |
 
-### Search and paging
+### Busca e paginação
 
-Directory, class, lesson, discipline, material and activity lists return arrays with endpoint-specific caps. Announcement and event lists have a 500-row cap. Search filters for directory, classes and lessons go in POST bodies. Clients should account for truncation at the limit. These routes expose no page/offset/cursor or total count. Report, likes, comments and gradebook shapes have their own collection fields. [Router and handlers](../../internal/api/)
+As consultas de pessoas, turmas, aulas, disciplinas, materiais e atividades retornam listas com limites específicos por operação. Avisos e eventos retornam até 500 registros. Envie os filtros de busca de pessoas, turmas e aulas no corpo do POST. Ao atingir o limite, a lista pode estar incompleta. Essas rotas não oferecem número de página, deslocamento, cursor ou contagem total. Boletins, curtidas, comentários e lançamentos de notas têm estruturas próprias, descritas nas respectivas operações. [Roteador e operações](../../internal/api/)
 
-### Errors
+### Erros
 
-| HTTP status | Body code | Client behavior |
+| Status HTTP | Código no corpo | Tratamento pelo cliente |
 | --- | --- | --- |
-| 200 at login only | `AUTH_INVALID_CREDENTIALS` | Body `status` is 401. Check for `accessToken` before starting a session. |
-| 400 | `VALIDATION_ERROR` | Read the reported `errors[].field` and `errors[].message`. |
-| 400 | `BUSINESS_RULE_VIOLATION` | Read the Portuguese `message`, e.g. reload a changed schedule or resolve pending grade releases. |
-| 401 | `AUTH_UNAUTHORIZED` | Protected route rejected the session. |
-| 403 | `AUTH_FORBIDDEN` | Role or object checks denied access. Some domain checks return a 400 business error instead. |
-| 404 | `RESOURCE_NOT_FOUND` | A handler could not find the requested resource. |
-| 409 | `DATA_CONFLICT` | Registration or class creation encountered a data conflict. |
-| 500 | `INTERNAL_ERROR` | Server-side failure. Check the resource's state before retrying a mutation. |
+| 200, apenas no login | `AUTH_INVALID_CREDENTIALS` | O `status` no corpo vale 401. Verifique se a resposta inclui `accessToken` antes de iniciar a sessão. |
+| 400 | `VALIDATION_ERROR` | Consulte `errors[].field` e `errors[].message` para identificar o campo a corrigir. |
+| 400 | `BUSINESS_RULE_VIOLATION` | Consulte `message`. Por exemplo, pode ser necessário recarregar uma grade horária alterada ou resolver pendências de liberação de notas. |
+| 401 | `AUTH_UNAUTHORIZED` | A rota protegida rejeitou a sessão. |
+| 403 | `AUTH_FORBIDDEN` | O perfil ou o vínculo com o recurso não permite o acesso. Algumas verificações de domínio retornam erro de regra de negócio com status 400. |
+| 404 | `RESOURCE_NOT_FOUND` | A operação não encontrou o recurso solicitado. |
+| 409 | `DATA_CONFLICT` | Ocorreu um conflito de dados ao cadastrar um usuário ou criar uma turma. |
+| 500 | `INTERNAL_ERROR` | Falha no servidor. Verifique o estado do recurso antes de repetir uma operação de escrita. |
 
-A typical validation body is shown below. Application errors have a numeric `status`, machine-readable `code`, display `message` and RFC 3339 `timestamp`. The Go validation helper currently reports one field at a time. Uploads also use `{"error":"…"}`. Unmatched routes and methods can produce Go router responses outside the JSON envelope. [Error definitions](../../internal/api/errors.go) · [Login handler](../../internal/api/users.go) · [File handler](../../internal/api/storage.go)
+Os erros da aplicação incluem `status` numérico, `code` para tratamento programático, `message` para exibição e `timestamp` no formato RFC 3339. A validação em Go informa um campo por vez. O envio de arquivos também pode retornar `{"error":"…"}`. Para caminhos ou métodos sem correspondência, o roteador pode responder fora do formato JSON da aplicação. [Definições de erro](../../internal/api/errors.go) · [Login](../../internal/api/users.go) · [Arquivos](../../internal/api/storage.go)
 
 ```json
 {
@@ -50,9 +50,9 @@ A typical validation body is shown below. Application errors have a numeric `sta
 }
 ```
 
-### Try a read and a validation failure
+### Testar uma consulta e uma falha de validação
 
-Against the local service, the first command returns `200` and the health object when PostgreSQL is reachable. The second returns `400` and the example validation error with the actual request timestamp. Neither command writes data.
+No ambiente local, o primeiro comando retorna `200` e o objeto de saúde se o PostgreSQL estiver acessível. O segundo envia um JSON incompleto e retorna `400` com o erro do exemplo acima e o horário real da requisição. Os comandos não alteram os dados.
 
 ```sh
 curl -i http://localhost:8080/health
@@ -60,9 +60,9 @@ curl -i -H 'Content-Type: application/json' \
   --data-binary '{' http://localhost:8080/api/auth/login
 ```
 
-### Sign in and find a class
+### Entrar e buscar uma turma
 
-Start the seeded local API and database using the [development guide](../engineering/development.md). Run this block in Bash with `curl` and `jq`. It uses the disposable administrator account, reads its profile and searches for a cohort by name. Class search uses a POST request and leaves school records unchanged.
+Inicie a API local e o banco com os dados de demonstração seguindo o [guia de desenvolvimento](../engineering/development.md). Execute o bloco em Bash com `curl` e `jq`. Ele usa a conta de administrador de demonstração, consulta o perfil e busca uma turma pelo nome. A busca usa POST apenas para consulta.
 
 ```bash
 (
@@ -75,7 +75,7 @@ Start the seeded local API and database using the [development guide](../enginee
     jq -n '{email: env.SISGES_DEMO_EMAIL, password: env.SISGES_DEMO_PASSWORD}' |
       curl -fsS -H 'Content-Type: application/json' \
         --data-binary @- "$api_url/auth/login" |
-      jq -er '.accessToken // error(.code // "Missing accessToken")'
+      jq -er '.accessToken // error(.code // "accessToken ausente")'
   )
 
   curl -fsS -H "Authorization: Bearer $token" "$api_url/users/me" |
@@ -87,8 +87,8 @@ Start the seeded local API and database using the [development guide](../enginee
 )
 ```
 
-A fresh seed returns profile register `ADM0001` and role `ADMIN`. The search returns an array containing `Turma 01`, grade level `6º ano`, a numeric cohort ID and roster counts. An empty array means the name matched no visible cohort. If login returns `AUTH_INVALID_CREDENTIALS`, check that the local seed ran and that the fixture still has its original password. To work with a class timetable or a dated lesson, use the cohort ID from search and the role required by the operation. [Local seed](../../internal/api/seed.go) · [Timetable and lesson request examples](lessons.md)
+Em um banco recém-populado com os dados de demonstração, o perfil retorna a matrícula `ADM0001` e o papel `ADMIN`. A busca retorna uma lista com `Turma 01`, a série `6º ano`, o ID numérico da turma e as quantidades de alunos e professores. Uma lista vazia indica que nenhuma turma visível corresponde ao nome. Se o login retornar `AUTH_INVALID_CREDENTIALS`, verifique se os dados de demonstração foram carregados e se a conta mantém a senha inicial. Para consultar a grade horária ou registrar uma aula, use o ID da turma retornado pela busca e o perfil exigido pela operação. [Dados de demonstração](../../internal/api/seed.go) · [Exemplos de grade horária e aulas](lessons.md)
 
-## Maintaining the contract
+## Manutenção do contrato
 
-When a route, guard, DTO, status code or database-backed filter changes, update its domain table and any examples. Reconcile the documented method/path pairs with `App.routes`, including the concrete gradebook path dispatched by the wildcard and the WebSocket upgrade. Check the linked handler for object-level rules as well as the router-level role. [Router](../../internal/api/app.go) · [API reference template](../templates/api-reference.md)
+Ao alterar uma rota, uma regra de acesso, um DTO, um status HTTP ou um filtro no banco, atualize a tabela do domínio e os exemplos afetados. Confira método e caminho em `App.routes`, incluindo a rota de notas atendida pelo curinga e a negociação de WebSocket. Verifique tanto o perfil exigido pelo roteador quanto os vínculos que a operação exige para acessar o recurso. [Roteador](../../internal/api/app.go) · [Modelo de referência da API](../templates/api-reference.md)

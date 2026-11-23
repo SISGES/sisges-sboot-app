@@ -1,94 +1,94 @@
-# PostgreSQL data model
+# Modelo de dados do PostgreSQL
 
-Audience / owner role — backend and data engineers
+Público e responsabilidade — engenharia de backend e de dados
 
-Status / scope — schema produced by the committed SQL migrations through V24
+Situação e escopo — esquema resultante das migrações SQL versionadas até a V24
 
-Source baseline — backend `6b37a18`, 23 versioned SQL files in [db/migration](../../db/migration)
+Revisão de referência — backend `6b37a18`, com 23 arquivos SQL versionados em [db/migration](../../db/migration)
 
-## Entities and relationships
+## Entidades e relacionamentos
 
-All 27 domain tables are in schema `sisges`. Integer `id` is the primary key except for the link and timetable tables with composite keys shown below. References to a user identify a login account. References to a teacher or student identify a role profile with its own independent ID. One database contains a single school-wide academic configuration and no tenant key. [Base schema](../../db/migration/V1__create_schema_and_tables.sql) · [Grading and cycle](../../internal/api/grading.go)
+As 27 tabelas de domínio pertencem ao esquema `sisges`. A chave primária é o inteiro `id`, exceto nas tabelas de vínculo e de grade com chaves compostas descritas abaixo. Referências a um usuário identificam a conta de acesso. Referências a professor ou aluno identificam o perfil específico, que tem seu próprio ID. Cada banco contém uma configuração acadêmica comum a toda a escola, sem chave de isolamento por instituição. [Esquema inicial](../../db/migration/V1__create_schema_and_tables.sql) · [Configuração de notas e ciclo](../../internal/api/grading.go)
 
 ```mermaid
 erDiagram
-    USERS ||--o| STUDENT : identifies
-    USERS ||--o| TEACHER : identifies
-    SCHOOL_CLASS o|--o{ STUDENT : enrolls
-    STUDENT ||--o{ STUDENT_RESPONSIBLE_LINK : has
-    STUDENT_RESPONSIBLE ||--o{ STUDENT_RESPONSIBLE_LINK : appears_in
-    SCHOOL_CLASS ||--o{ CLASS_SCHEDULE : plans
-    DISCIPLINE ||--o{ CLASS_SCHEDULE : assigned_to
-    SCHOOL_CLASS ||--o{ CLASS_MEETING : holds
-    DISCIPLINE ||--o{ CLASS_MEETING : taught_at
-    TEACHER o|--o{ CLASS_MEETING : records
-    CLASS_MEETING ||--o{ ATTENDANCE : records
-    STUDENT ||--o{ ATTENDANCE : receives
-    CLASS_MEETING ||--o{ EVALUATIVE_ACTIVITY : contains
-    EVALUATIVE_ACTIVITY ||--o{ ACTIVITY_GRADE : produces
-    STUDENT ||--o{ ACTIVITY_GRADE : receives
-    ACADEMIC_CYCLE ||--o{ STUDENT_YEAR_RESULT : closes
-    STUDENT ||--o{ STUDENT_YEAR_RESULT : receives
+    USERS ||--o| STUDENT : identifica
+    USERS ||--o| TEACHER : identifica
+    SCHOOL_CLASS o|--o{ STUDENT : matricula
+    STUDENT ||--o{ STUDENT_RESPONSIBLE_LINK : possui
+    STUDENT_RESPONSIBLE ||--o{ STUDENT_RESPONSIBLE_LINK : consta_em
+    SCHOOL_CLASS ||--o{ CLASS_SCHEDULE : planeja
+    DISCIPLINE ||--o{ CLASS_SCHEDULE : alocada_em
+    SCHOOL_CLASS ||--o{ CLASS_MEETING : tem
+    DISCIPLINE ||--o{ CLASS_MEETING : ministrada_em
+    TEACHER o|--o{ CLASS_MEETING : registra
+    CLASS_MEETING ||--o{ ATTENDANCE : registra
+    STUDENT ||--o{ ATTENDANCE : recebe
+    CLASS_MEETING ||--o{ EVALUATIVE_ACTIVITY : contem
+    EVALUATIVE_ACTIVITY ||--o{ ACTIVITY_GRADE : gera
+    STUDENT ||--o{ ACTIVITY_GRADE : recebe
+    ACADEMIC_CYCLE ||--o{ STUDENT_YEAR_RESULT : encerra
+    STUDENT ||--o{ STUDENT_YEAR_RESULT : recebe
 ```
 
-### Accounts, enrollment and curriculum
+### Contas, matrículas e currículo
 
-| Table | Key, role and relationships |
+| Tabela | Chaves, finalidade e relacionamentos |
 | --- | --- |
-| `users` | One identity with unique `email` and `register`, bcrypt password hash, name, birth date, gender, role and optional profile image path. SQL permits ADMIN, TEACHER and STUDENT. Soft deletion leaves both unique keys reserved. |
-| `student`, `teacher` | Each table has its own unique `user_id` FK with physical cascade. Each student has a nullable current `class_id`. Physical class removal sets this FK to null. Registration creates the profile for the user's role in the same transaction. |
-| `student_responsible`, `student_responsible_link` | A guardian has a name, primary phone and email and optional alternate contacts. The link's PK is `(student_id, responsible_id)`. Both FKs cascade on physical deletion. Multiple guardians and shared guardians are representable. A guardian has no login role here. |
-| `document_type`, `student_document` | Catalog entries have unique names. A student can have many document metadata records, each referring to a type and holding optional number, issuer and issue date. The final schema omits the old document file path. |
-| `school_class` | A class has a unique `(name, academic_year)` plus `schedule_revision`, initially zero. `academic_year` is a grade-level label up to 30 characters, for example `6º ano`. Calendar-year state lives in the academic cycle. |
-| `discipline`, `discipline_teacher` | Discipline names are unique. The junction PK `(discipline_id, teacher_id)` allows multiple teachers per discipline. |
-| `teacher_class`, `class_discipline` | Junction PKs are `(teacher_id, class_id)` and `(class_id, discipline_id)`. Each supports soft-deleted links. Linking a teacher with selected subjects reactivates or creates the relevant links atomically. Teaching assignments are inferred from these relations and `discipline_teacher`. |
-| `lesson`, `discipline_material` | `lesson` is an ordered curriculum item belonging to a discipline. `discipline_material` holds title, description, type, optional file path, optional teacher and optional class. Materials and dated class meetings have separate IDs and storage. |
-| `user_logs` | User-linked action codes 0–4 represent delete, create, update, login and logout. The migrations define the table. The Go handlers at this revision provide no general action-log writer. |
+| `users` | Uma identidade por conta, com `email` e `register` únicos, hash bcrypt da senha, nome, data de nascimento, gênero, papel e caminho opcional da imagem de perfil. O SQL aceita ADMIN, TEACHER e STUDENT. A exclusão lógica mantém os dois valores únicos reservados. |
+| `student`, `teacher` | Cada tabela tem uma chave estrangeira `user_id` única. A exclusão física da conta exclui o perfil em cascata. O campo `class_id` do aluno indica a turma atual e pode ser nulo. A exclusão física da turma torna esse campo nulo. O cadastro cria o perfil correspondente ao papel do usuário na mesma transação. |
+| `student_responsible`, `student_responsible_link` | O responsável tem nome, telefone e e-mail principais e contatos alternativos opcionais. A chave primária do vínculo é `(student_id, responsible_id)`. As duas chaves estrangeiras propagam a exclusão física ao vínculo. Um aluno pode ter vários responsáveis, e um responsável pode atender a mais de um aluno. O cadastro do responsável serve para contato, sem papel de acesso próprio. |
+| `document_type`, `student_document` | Os tipos de documento têm nomes únicos. Cada aluno pode ter vários registros de metadados, cada um com um tipo e, opcionalmente, número, órgão emissor e data de emissão. O esquema atual já não contém a coluna antiga do caminho do arquivo do documento. |
+| `school_class` | Combinação única de `(name, academic_year)` e campo `schedule_revision`, inicialmente zero. O valor de `academic_year` identifica a série em até 30 caracteres, por exemplo, `6º ano`. O ciclo acadêmico guarda o estado do ano letivo. |
+| `discipline`, `discipline_teacher` | Os nomes das disciplinas são únicos. A chave primária `(discipline_id, teacher_id)` da tabela de vínculo permite associar mais de um professor à disciplina. |
+| `teacher_class`, `class_discipline` | As chaves primárias compostas são `(teacher_id, class_id)` e `(class_id, discipline_id)`. Ambas permitem exclusão lógica do vínculo. Ao associar o professor e as disciplinas selecionadas à turma, a aplicação cria ou reativa os vínculos em uma única transação. A atribuição de aulas deriva dessas relações e de `discipline_teacher`. |
+| `lesson`, `discipline_material` | `lesson` é um item do conteúdo programático de uma disciplina, com posição na sequência. `discipline_material` guarda título, descrição, tipo e, opcionalmente, caminho do arquivo, professor e turma. Materiais e aulas realizadas em uma data têm registros e identificadores próprios. |
+| `user_logs` | Os códigos de ação de 0 a 4 representam exclusão, criação, atualização, entrada e saída do usuário, respectivamente. As migrações definem a tabela. Nesta revisão, a aplicação Go não dispõe de um mecanismo geral de gravação dessas ações. |
 
-[Accounts and curriculum](../../db/migration/V1__create_schema_and_tables.sql) · [Soft deletion and logs](../../db/migration/V3__school_class_year_only_soft_delete_user_logs_remove_file_path.sql) · [Guardian links](../../db/migration/V5__student_multiple_responsibles.sql) · [Discipline assignments](../../db/migration/V8__discipline_teacher_many_to_many.sql) · [Material scope](../../db/migration/V10__discipline_material_file_class_teacher.sql) · [Atomic teacher assignment](../../internal/api/class_teacher.go)
+[Contas e currículo](../../db/migration/V1__create_schema_and_tables.sql) · [Exclusão lógica e registros de ações](../../db/migration/V3__school_class_year_only_soft_delete_user_logs_remove_file_path.sql) · [Vínculos de responsáveis](../../db/migration/V5__student_multiple_responsibles.sql) · [Professores por disciplina](../../db/migration/V8__discipline_teacher_many_to_many.sql) · [Abrangência dos materiais](../../db/migration/V10__discipline_material_file_class_teacher.sql) · [Vínculo atômico de professor](../../internal/api/class_teacher.go)
 
-### Teaching, assessment and school communications
+### Aulas, avaliações e comunicação escolar
 
-| Table | Key, role and relationships |
+| Tabela | Chaves, finalidade e relacionamentos |
 | --- | --- |
-| `class_schedule` | Recurring subject by `(class_id, weekday, slot)` PK. SQL constrains weekday to 1–5 and slot to 0–4. FK references to class and discipline do not encode class-subject membership. |
-| `class_meeting` | Each occurrence has a class, subject, date, required start/end time and optional teacher. A scheduled record includes nullable `schedule_slot`, text content and JSONB attachments defaulting to an empty array. A partial unique index covers active non-null `(class_id, meeting_date, schedule_slot)`. Legacy manual meetings have a null slot. |
-| `attendance` | One row per unique `(class_meeting_id, student_id)`, with presence and a soft-delete timestamp. |
-| `evaluative_activity` | Each activity belongs to one meeting. It carries a nullable trimester 1–3, activity type, maximum points, optional file path, release flag, release time and optional releasing user. |
-| `activity_grade` | Unique `(activity_id, student_id)`. The score is nullable numeric(8,2). SQL enforces a nonnegative score when present. Physical removal of the activity or student cascades. |
-| `grading_config` | Year and trimester point maxima, minimum percentages and category allocations for exams, activities and assignments. The application reads and updates the lowest-ID row. |
-| `academic_cycle` | Start/end dates, trimester 1–3, grading-lock marker and timestamps. Allowed states are `NOT_STARTED`, `IN_PROGRESS` and `FINISHED`. The application selects the lowest-ID row here too. |
-| `student_year_result` | Unique `(academic_cycle_id, student_id)` stores base, final and annual recovery scores, approval/promotion and the source/optional destination class. The source FK restricts physical deletion. The destination FK uses SET NULL. |
-| `announcement` | Text/image post with nullable creator FK, optional image path, activation dates and CSV role fields. Feed reads use the visibility window and `hidden_for_roles`. The legacy `target_roles` field remains available as metadata. |
-| `announcement_like`, `announcement_comment` | User and announcement are FKs in both tables. Likes are unique per announcement and user. Comments have their own text and soft-delete timestamp. Physical deletion of the announcement cascades to both. |
-| `school_event` | Required creator, title, timestamp and audience. SQL requires a class for `CLASS` and a null class for `ALL` or `TEACHERS`. The endpoint validates the allowed date window against the São Paulo civil year. |
+| `class_schedule` | Disciplina recorrente por turma, dia da semana e horário. A chave primária é `(class_id, weekday, slot)`. O SQL limita o dia da semana a 1–5 e o horário a 0–4. As chaves estrangeiras de turma e disciplina, isoladamente, não garantem o vínculo entre elas. |
+| `class_meeting` | Cada aula realizada tem turma, disciplina, data, início e término obrigatórios e professor opcional. O registro inclui `schedule_slot` anulável, conteúdo em texto e anexos em JSONB, com lista vazia por padrão. Um índice único parcial cobre `(class_id, meeting_date, schedule_slot)` nas aulas ativas com horário não nulo. Em aulas antigas de cadastro manual, o horário na grade é nulo. |
+| `attendance` | Uma linha por combinação única de `(class_meeting_id, student_id)`, com indicador de presença e data de exclusão lógica. |
+| `evaluative_activity` | Cada atividade pertence a uma aula. Guarda trimestre opcional de 1 a 3, tipo, pontuação máxima, caminho opcional de arquivo, indicador de liberação, data de liberação e usuário responsável pela liberação, se houver. |
+| `activity_grade` | Combinação única de `(activity_id, student_id)`. A nota pode ser nula e tem tipo numeric(8,2). Quando preenchida, o SQL exige valor não negativo. Excluir fisicamente a atividade ou o aluno exclui as respectivas notas em cascata. |
+| `grading_config` | Pontuação máxima anual e por trimestre, percentuais mínimos e distribuição de pontos entre provas, atividades e trabalhos. A aplicação lê e atualiza a linha de menor ID. |
+| `academic_cycle` | Datas de início e fim, trimestre de 1 a 3, indicador de bloqueio das notas e registros de data e hora. Os estados permitidos são `NOT_STARTED`, `IN_PROGRESS` e `FINISHED`. A aplicação também seleciona a linha de menor ID. |
+| `student_year_result` | A combinação única `(academic_cycle_id, student_id)` guarda pontuação base, final e de recuperação anual, indicadores de aprovação e promoção, turma de origem e turma de destino opcional. A chave de origem restringe a exclusão física. A de destino usa SET NULL. |
+| `announcement` | Aviso de texto ou imagem com autor e caminho de imagem opcionais, datas de vigência e papéis em campos separados por vírgula. O mural consulta a janela de visibilidade e `hidden_for_roles`. O campo legado `target_roles` continua disponível como metadado. |
+| `announcement_like`, `announcement_comment` | Ambas referenciam usuário e aviso. Há no máximo uma curtida por aviso e usuário. O comentário tem texto próprio e data de exclusão lógica. A exclusão física do aviso se propaga às duas tabelas. |
+| `school_event` | Exige criador, título, data e hora e público-alvo. O SQL exige turma para `CLASS` e turma nula para `ALL` ou `TEACHERS`. A rota valida o período permitido pelo ano civil no fuso horário de São Paulo. |
 
-[Timetables](../../db/migration/V24__weekly_timetable_and_lesson_records.sql) · [Assessments](../../db/migration/V18__grade_domain_and_academic_cycle.sql) · [Year results](../../db/migration/V19__student_year_result.sql) · [Feed reads](../../internal/api/content.go) · [Events](../../db/migration/V22__user_profile_image_and_events.sql) · [Event date handling](../../internal/api/event_date.go)
+[Grade horária](../../db/migration/V24__weekly_timetable_and_lesson_records.sql) · [Avaliações](../../db/migration/V18__grade_domain_and_academic_cycle.sql) · [Resultados anuais](../../db/migration/V19__student_year_result.sql) · [Consulta do mural](../../internal/api/content.go) · [Eventos](../../db/migration/V22__user_profile_image_and_events.sql) · [Datas de eventos](../../internal/api/event_date.go)
 
-## Invariants and transaction boundaries
+## Invariantes e limites das transações
 
-| Rule | Where it is enforced |
+| Regra | Onde é aplicada |
 | --- | --- |
-| Role-specific profiles and student guardian at registration | Registration validates the input, locks per registration prefix with `pg_advisory_xact_lock` and writes the user, profile and guardian link in one transaction. SQL independently enforces role enum, FK and key uniqueness. [Registration](../../internal/api/users.go) |
-| One weekly schedule writer at a time per class | A class-row lock serializes schedule and lesson saves. A stale schedule revision fails before weekly rows are replaced. A new meeting requires active links, matching subject and no overlapping active meeting. Editing an existing scheduled record checks teacher ownership and recorded subject. [Schedules](../../internal/api/schedules.go) |
-| Scores and release | The grade handler checks class membership and the activity maximum for non-null scores, then upserts all submitted entries in a transaction. The released flag is read before the transaction. The separate release endpoint updates the activity directly. Concurrent release and grade writes have no shared release lock in these handlers. [Grade writes](../../internal/api/activities.go) |
-| Results and repeat closure | Year-end processing reads up to 10,000 enrolled students, applies promotion and writes result rows in one transaction. The cycle transition to FINISHED is a separate update. If results already exist for the chosen cycle, processing returns early. Starting another year updates the same lowest-ID cycle. Multi-year historical processing needs a distinct cycle identity before it can safely reuse this model. [Cycle transitions](../../internal/api/grading.go) · [Result processing](../../internal/api/report.go) |
-| Grading policy and historical reporting | SQL seeds minimum-percentage columns. The report and promotion code uses 70% of the configured maximum for the relevant recovery and pass calculations. The current report aggregates the student's current class. The activity table has no cycle FK. Interpreting reports as archived per-cycle transcripts would require a different query/model. [Seed configuration](../../db/migration/V14__grading_config.sql) · [Report calculation](../../internal/api/report.go) |
+| Perfil por papel e responsável no cadastro do aluno | O cadastro valida os dados, obtém um bloqueio por prefixo de matrícula com `pg_advisory_xact_lock` e grava usuário, perfil e vínculo com o responsável em uma transação. O SQL também impõe os papéis permitidos, a integridade referencial e a unicidade das chaves. [Cadastro](../../internal/api/users.go) |
+| Uma gravação por vez na grade semanal de cada turma | O bloqueio da linha da turma serializa as gravações da grade e dos registros de aula. Uma revisão desatualizada é rejeitada antes da substituição dos horários. Uma nova aula exige vínculos ativos, disciplina correspondente e ausência de sobreposição com outra aula ativa. Na edição, a aplicação verifica se o professor é o responsável e se a disciplina corresponde à registrada. [Grade e aulas](../../internal/api/schedules.go) |
+| Notas e liberação | A operação de lançamento verifica se o aluno pertence à turma e se a nota informada respeita o máximo da atividade. Em seguida, insere ou atualiza os lançamentos em uma transação. A leitura do indicador de liberação ocorre antes da transação. A rota de liberação atualiza diretamente a atividade. As duas operações não compartilham um bloqueio de liberação quando executadas em paralelo. [Lançamento de notas](../../internal/api/activities.go) |
+| Resultados e repetição do encerramento | O encerramento do ano lê até 10.000 alunos matriculados, aplica a promoção e grava os resultados na mesma transação. A mudança do ciclo para FINISHED ocorre em outra atualização. Se já há resultados para o ciclo, a apuração termina sem recalculá-los. Iniciar outro ano atualiza o mesmo ciclo de menor ID. Para processar o histórico de vários anos com segurança, cada ciclo precisaria de uma identidade distinta. [Transições do ciclo](../../internal/api/grading.go) · [Apuração dos resultados](../../internal/api/report.go) |
+| Política de notas e histórico | O SQL inicializa as colunas de percentual mínimo. O cálculo do boletim e da promoção utiliza 70% da pontuação máxima configurada nas regras correspondentes de recuperação e aprovação. O boletim agrega dados da turma atual do aluno. A atividade não tem chave estrangeira para o ciclo. Usar o boletim como histórico arquivado por ciclo exigiria outra consulta ou modelagem. [Configuração inicial](../../db/migration/V14__grading_config.sql) · [Cálculo do boletim](../../internal/api/report.go) |
 
-## Migration lifecycle and verification
+## Ciclo de migrações e verificação
 
-| Versions | Changes to preserve when interpreting historical data |
+| Versões | Mudanças relevantes para interpretar dados históricos |
 | --- | --- |
-| V1–V3 | Create base entities, seed six document types, remove the class period, add soft-deletion fields and user logs, remove the original student-document and material file paths. |
-| V4–V8 | Allow alternate guardian contacts to be null, backfill guardian links and drop the single guardian FK. Expand the grade-level label, introduce meeting times and teacher, then move the discipline's teacher assignment to its junction. |
-| V9–V13 | Add announcements, reintroduce material file paths with class/teacher scope, add evaluative activities, likes, comments and hidden-role visibility. |
-| V14–V17 | Seed grading policy and allocate trimester points across categories. The committed sequence skips V16. V17 installs historical E2E fixtures, subsequently cleaned by V21. |
-| V18–V21 | Add grade/release and cycle fields, yearly results and the initial cycle row. V21 removes the former test user and conditionally removes associated fixture records. |
-| V22–V24 | Add profile images, calendar events, active-record query indexes, weekly timetable and dated lesson fields. Existing meetings keep a null slot. |
+| V1–V3 | Criam as entidades iniciais, cadastram seis tipos de documento, removem o turno da turma, acrescentam campos de exclusão lógica e a tabela de ações de usuário e retiram os caminhos de arquivo originais de documentos de alunos e materiais. |
+| V4–V8 | Tornam opcionais os contatos alternativos do responsável, migram os vínculos existentes e removem a chave para um único responsável. Ampliam o campo da série, acrescentam horários e professor à aula e transferem a associação entre professor e disciplina para uma tabela de vínculo. |
+| V9–V13 | Criam avisos, restauram o caminho de arquivo dos materiais com vínculo a turma e professor, acrescentam atividades avaliativas, curtidas, comentários e ocultação por papel. |
+| V14–V17 | Inicializam a política de notas e repartem os pontos de cada trimestre entre as categorias. A sequência versionada pula a V16. A V17 introduz dados de testes de ponta a ponta que a V21 remove posteriormente. |
+| V18–V21 | Acrescentam campos de notas, liberação e ciclo, os resultados anuais e o registro inicial do ciclo. A V21 remove o antigo usuário de teste e exclui os registros auxiliares que atendem às condições de limpeza. |
+| V22–V24 | Acrescentam imagens de perfil, eventos de calendário, índices para consultas de registros ativos, grade semanal e campos de registro da aula por data. As aulas preexistentes mantêm a posição nula na grade. |
 
-Startup finds numeric `V<number>__<name>.sql` files, sorts by number, and creates `sisges.go_schema_migrations` if needed. A version already recorded there, or recorded as successful in the optional legacy `sisges.flyway_schema_history`, is skipped. Each remaining file and its ledger insert commit together. A failure rolls back that file and stops startup. Earlier successful files stay committed. The Go ledger tracks version, filename and application time. The runner compares versions alone and has no down migration or cross-process startup lock. Ship schema corrections in a new version. [Migration runner](../../internal/api/migrate.go) · [SQL history](../../db/migration)
+Na inicialização, a aplicação identifica arquivos `V<number>__<name>.sql` com versão numérica, ordena-os por versão e cria `sisges.go_schema_migrations` se necessário. Ignora as versões registradas nessa tabela ou com sucesso na tabela legada opcional `sisges.flyway_schema_history`. Cada arquivo pendente e sua entrada no histórico são confirmados em uma só transação. Uma falha desfaz a transação daquele arquivo e interrompe a inicialização. As versões anteriores aplicadas com êxito permanecem no banco. O histórico do Go guarda versão, nome do arquivo e instante da aplicação. O executor compara apenas versões, sem migração reversa nem bloqueio de inicialização entre processos. Publique correções de esquema em uma nova versão. [Executor de migrações](../../internal/api/migrate.go) · [Histórico SQL](../../db/migration)
 
-For read-only inspection of an installation, check its ledger and the V24 index definition. On an upgraded database, also check successful Flyway versions when interpreting absent Go ledger entries. The PostgreSQL integration test exercises the legacy-history case in an isolated database. [Migration integration test](../../internal/api/integration_test.go)
+Para inspecionar uma instalação em modo de leitura, consulte o histórico e a definição do índice da V24. Se a base passou por atualização, consulte também as versões aplicadas pelo Flyway antes de interpretar uma ausência no histórico do Go. O teste de integração com PostgreSQL cobre esse cenário em uma base isolada. [Teste de integração das migrações](../../internal/api/integration_test.go)
 
 ```sql
 SELECT version, name, applied_at
@@ -101,10 +101,10 @@ FROM pg_indexes
 WHERE schemaname = 'sisges' AND indexname = 'class_meeting_schedule_day';
 ```
 
-## Data handling
+## Tratamento dos dados
 
-Account details, guardian contacts, document numbers, attendance and individual scores are identifiable school records. Soft deletion sets a timestamp and typically removes a row from active queries. It leaves the data and unique keys in place. The announcement and event delete handlers physically remove rows. The expiry worker also physically removes expired posts and attempts object cleanup. Cleanup of referenced images is best effort, and R2 bytes have no database FK. The schema does not define retention periods, cross-store erasure guarantees or a per-school export boundary. These require a product and operations decision for the installation. [Content handlers](../../internal/api/content.go) · [Expiry loop](../../internal/api/websocket.go) · [Stored-file lifecycle](../../internal/api/storage.go)
+Dados de conta, contatos de responsáveis, números de documentos, frequência e notas individuais são registros escolares identificáveis. A exclusão lógica preenche uma data e normalmente retira a linha das consultas de registros ativos. Os dados e suas chaves únicas permanecem no banco. As operações de exclusão de aviso e evento removem fisicamente as linhas. A rotina de expiração também exclui os avisos vencidos e tenta remover os objetos associados. A remoção das imagens pode falhar e os objetos do R2 não têm chave estrangeira no banco. A equipe de produto e a operação precisam definir, para a instalação, os prazos de retenção, a abrangência da exclusão entre os dois armazenamentos e como delimitar a exportação por escola. [Operações de conteúdo](../../internal/api/content.go) · [Expiração](../../internal/api/websocket.go) · [Ciclo dos arquivos](../../internal/api/storage.go)
 
-## Review triggers
+## Quando revisar
 
-Update the affected entity rows, invariants and migration history when adding SQL versions, changing enrollment or grading rules, altering physical deletion, or introducing tenant or cycle keys. Recheck the diagram and lifecycle descriptions against both a fresh schema and the supported upgrade path. [System architecture](system.md) · [Timetable decision](adr-001-weekly-timetable.md)
+Atualize as entidades afetadas, as invariantes e o histórico ao incluir versões SQL, mudar regras de matrícula ou notas, alterar exclusões físicas ou introduzir chaves de instituição ou ciclo. Confira o diagrama e os ciclos de vida tanto em um esquema criado do zero quanto no caminho de atualização suportado. [Arquitetura do sistema](system.md) · [Decisão sobre a grade](adr-001-weekly-timetable.md)

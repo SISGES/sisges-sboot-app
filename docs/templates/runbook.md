@@ -1,31 +1,31 @@
-# [Subject] — Operational runbook
+# [Assunto] — Procedimento operacional
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Trigger and prerequisites
+## Quando usar e pré-requisitos
 
-[State operator role, target environment, access, dependencies and impact.]
+[Informe quem executa o procedimento, o ambiente, os acessos, as dependências e o impacto previsto.]
 
-## Procedure
+## Procedimento
 
-[List ordered actions with expected observations and stop conditions.]
+[Numere as ações e informe o resultado esperado e a condição de interrupção de cada etapa.]
 
-| Step and action | Expected observation | Stop condition or recovery |
+| Etapa e ação | Resultado esperado | Quando interromper ou iniciar a recuperação |
 | --- | --- | --- |
-| [Step and action] | [Expected observation] | [Stop condition or recovery] |
+| [Etapa e ação] | [Resultado esperado] | [Quando interromper ou iniciar a recuperação] |
 
-## Verification and recovery
+## Verificação e recuperação
 
-[Give health checks, failure branches, recovery limits and data-loss cautions.]
+[Descreva as verificações de integridade, as ações em caso de falha, os limites da recuperação e os riscos de perda de dados.]
 
-## Operational ownership
+## Responsabilidade operacional
 
-[Distinguish established procedures from proposed owner, targets or controls.]
+[Indique quais procedimentos já estão em vigor e quais responsáveis, metas ou controles ainda são propostas.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

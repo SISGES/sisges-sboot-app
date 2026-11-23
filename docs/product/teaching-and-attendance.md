@@ -1,39 +1,39 @@
-# Timetables, daily lessons and attendance
+# Grade horária, registro de aulas e frequência
 
-**Scope** · Functional specification for P-03 to P-05. The administrator defines a recurring subject timetable. A teacher records what happened on a particular date and marks the cohort’s attendance.
+**Escopo** · Especificação funcional dos requisitos P-03 a P-05. O administrador define a grade semanal de disciplinas. O professor registra o conteúdo ministrado em cada data e faz a chamada da turma.
 
-## From timetable to lesson
+## Da grade ao registro da aula
 
-| Stage | Preconditions and action | Persisted result or exception |
+| Etapa | Pré-condições e ação | Resultado ou exceção |
 | --- | --- | --- |
-| Plan | At `/admin/grade-horaria`, an administrator selects a cohort and places linked subjects into weekday slots. | A draft stays in browser memory across route changes for the current user. A page reload or logout clears it. |
-| Save timetable | Submit the complete slot list and the revision returned by the last read. Weekdays are Monday–Friday (1–5), with slots 0–4. | A matching revision replaces the list atomically and increments the revision, including an empty schedule. Duplicate positions, unrelated subjects and stale revisions are rejected. Re-read before reconciling concurrent edits. |
-| Open teaching day | A teacher selects an assigned cohort and date in the daily lesson flow. | The API combines unrecorded slots the teacher is eligible to teach and that teacher’s existing scheduled records for the selected day. No matching slots yields an empty list. |
-| Record a lesson | Submit the date, slot, subject, content and/or attachments. A new slot requires the teacher’s cohort membership and matching subject assignment. | The first save creates a dated lesson. Re-saving the same owned slot with the same subject updates content and attachments in place. A conflicting legacy meeting in the interval blocks a new record. |
-| Read lesson | Staff open the lesson through Aulas. | Assigned teachers can read their own records. Administrators can inspect and remove records. Legacy, unscheduled meetings retain an edit path. New manual meeting creation is rejected. |
+| Planejar | Em `/admin/grade-horaria`, o administrador seleciona a turma e distribui as disciplinas vinculadas pelos horários da semana. | O rascunho do usuário permanece na memória do navegador durante a navegação entre telas. Recarregar a página ou sair da conta descarta o rascunho. |
+| Salvar a grade | Enviar a lista completa de horários e a revisão retornada na última consulta. Os dias vão de segunda a sexta (1 a 5), com horários de 0 a 4. | Se a revisão coincidir, a operação substitui a lista de uma só vez e incrementa a revisão, inclusive ao salvar uma grade vazia. A API rejeita horários duplicados, disciplinas sem vínculo e revisões desatualizadas. Consultar a grade novamente antes de conciliar alterações simultâneas. |
+| Consultar o dia | O professor escolhe uma de suas turmas e a data no registro diário. | A API reúne os horários ainda sem registro que o professor pode ministrar e as aulas da grade já registradas por ele naquela data. Se não houver horários correspondentes, retorna uma lista vazia. |
+| Registrar a aula | Enviar data, horário, disciplina e conteúdo, anexos ou ambos. Para um novo registro, o professor deve estar vinculado à turma e à disciplina prevista. | O primeiro envio cria a aula naquela data. Ao salvar de novo o mesmo horário de sua autoria com a mesma disciplina, o professor atualiza o conteúdo e os anexos no próprio registro. Uma aula do modelo anterior que se sobreponha ao intervalo impede a criação. |
+| Consultar uma aula | A equipe abre o registro pela tela Aulas. | O professor pode consultar as próprias aulas. O administrador pode consultar e excluir registros. Aulas antigas sem horário de grade ainda podem ser editadas. A API rejeita a criação manual de novas aulas. |
 
-The five slot intervals are 07:00–07:50, 07:50–08:40, 08:40–09:30, 09:45–10:35 and 10:35–11:25. A later timetable revision affects unrecorded periods. A recorded slot retains its original subject, content and meeting ID. The daily-write API permits teachers only, even though the frontend teacher route wrapper also admits administrators. [Schedule and daily handlers](../../internal/api/schedules.go) · [Meeting handlers](../../internal/api/meetings.go) · [Draft lifecycle](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/contexts/TimetableDraftProvider.tsx)
+Os cinco horários são 07:00–07:50, 07:50–08:40, 08:40–09:30, 09:45–10:35 e 10:35–11:25. Alterações posteriores na grade afetam os horários ainda sem registro. Uma aula já registrada preserva a disciplina original, o conteúdo e o ID. A API de registro diário permite a gravação apenas ao professor, embora a proteção da rota de professor no frontend também admita administradores. [Grade e registro diário](../../internal/api/schedules.go) · [Operações de aula](../../internal/api/meetings.go) · [Ciclo de vida do rascunho](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/contexts/TimetableDraftProvider.tsx)
 
-## Attendance
+## Frequência
 
-The lesson detail shows the current cohort roster. In the browser, a student with no saved mark initially appears present. The UI sends a single-student update when a mark changes, so displayed defaults alone do not establish that staff completed the register. The lesson’s teacher or an administrator submits one or more entries, each `P` (present) or `F` (absent). The API validates that every referenced student currently belongs to the lesson’s cohort and writes the submitted entries as a transaction. A subsequent save updates each submitted student’s mark. The student portal counts explicit absences grouped by subject. An unmarked lesson contributes no absence. [Attendance save](../../internal/api/meetings.go) · [Lesson detail screen](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/pages/AulaDetail/AulaDetail.tsx) · [Student absence query](../../internal/api/students.go)
+A tela da aula mostra a lista atual de alunos da turma. No navegador, um aluno sem lançamento aparece inicialmente como presente. A interface envia uma atualização individual quando a marcação muda. Assim, os valores exibidos por padrão são insuficientes para comprovar que a chamada foi concluída. O professor da aula ou o administrador pode enviar um ou mais lançamentos com `P` (presente) ou `F` (faltoso). A API verifica se cada aluno pertence atualmente à turma da aula e grava os lançamentos em uma transação. Um novo envio atualiza a marcação de cada aluno informado. O portal agrupa por disciplina as faltas explicitamente registradas. Uma aula sem marcação não soma falta. [Gravação da frequência](../../internal/api/meetings.go) · [Tela de detalhes da aula](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/pages/AulaDetail/AulaDetail.tsx) · [Consulta de faltas do aluno](../../internal/api/students.go)
 
-## Lesson attachments and study materials
+## Anexos da aula e materiais de estudo
 
-**Lesson record.** Text or at least one attachment is required. Trimmed content accepts up to 20,000 bytes, and a record accepts up to ten attachment references. With R2 configured, a teacher can upload an accepted image, PDF, text or Office file to `lesson-files` (up to 10 MiB each). A lesson attachment reference must use the current uploader’s path. Download authorization also checks the referenced lesson for eligible class members. [Lesson validation](../../internal/api/schedules.go) · [Storage](../../internal/api/storage.go) · [Daily lesson screen](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/pages/CreateAula/CreateAula.tsx)
+**Registro de aula.** É obrigatório informar texto ou ao menos um anexo. Após remover espaços nas extremidades, o conteúdo admite até 20.000 bytes. Cada registro comporta até dez referências de anexo. Com o R2 configurado, o professor pode enviar para `lesson-files` arquivos de imagem, PDF, texto ou Office em formatos aceitos, com até 10 MiB cada. A referência do anexo deve usar o caminho de quem fez o envio na conta atual. A autorização de download também verifica o vínculo com a aula referenciada para os membros da turma que têm direito de acesso. [Validação da aula](../../internal/api/schedules.go) · [Armazenamento](../../internal/api/storage.go) · [Tela de registro diário](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/pages/CreateAula/CreateAula.tsx)
 
-**Study material.** On `/materiais` a teacher chooses a cohort and subject, enters a title, and can supply a description. Creation checks the teacher’s cohort membership and the teacher–subject and cohort–subject links. Students see materials for their current cohort. Only the creating teacher can remove a material. The optional file picker submits the destination `materials`, which the Go upload handler rejects. A text-only material can be published without object storage. [Materials handlers](../../internal/api/content.go) · [Materials screen](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/pages/Materials/Materials.tsx)
+**Material de estudo.** Em `/materiais`, o professor escolhe turma e disciplina, informa um título e pode acrescentar uma descrição. A criação verifica os vínculos entre professor e turma, professor e disciplina, e turma e disciplina. O aluno vê os materiais da turma atual. Somente o professor que criou o material pode excluí-lo. O seletor de arquivo opcional usa o destino `materials`, rejeitado pela operação de envio em Go. O material somente com texto pode ser publicado sem armazenamento de objetos. [Operações de materiais](../../internal/api/content.go) · [Tela de materiais](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/src/pages/Materials/Materials.tsx)
 
-## Acceptance scenarios
+## Cenários de aceite
 
-| Given | When | Then |
+| Dado | Quando | Então |
 | --- | --- | --- |
-| Two administrators loaded revision 2 | The first saves revision 3 and the second submits the old revision | The second receives a business-rule error and the first change survives. |
-| A linked teacher, a Monday period and an assigned subject | The teacher records content, marks attendance and later edits the lesson content | The meeting ID and attendance are preserved. |
-| An existing recorded slot whose subject was later changed in the timetable | Its original teacher reopens that date | The saved record retains the original subject. |
-| A lesson with two enrolled students and one unrelated student | Staff include the unrelated student in a batch of attendance marks | The batch fails and none of its changes persist. |
-| A teacher with a linked class and subject | They publish a titled material without a file | An enrolled student can see it. Removing it as its creator takes it out of the active list. |
+| Dois administradores consultaram a revisão 2 | O primeiro salva a revisão 3 e o segundo envia a revisão anterior | O segundo recebe um erro de regra de negócio e a alteração do primeiro é preservada. |
+| Um professor vinculado, um horário de segunda-feira e a disciplina atribuída | O professor registra o conteúdo, faz a chamada e depois edita o conteúdo da aula | O ID da aula e os lançamentos de frequência são preservados. |
+| Um horário já registrado cuja disciplina foi alterada na grade | O professor que fez o registro reabre aquela data | A aula salva mantém a disciplina original. |
+| Uma aula com dois alunos da turma e um aluno de outra turma | O responsável pela chamada inclui o aluno externo em um lote de lançamentos | O lote falha e nenhuma das alterações é gravada. |
+| Um professor vinculado à turma e à disciplina | Ele publica um material com título e sem arquivo | O aluno matriculado consegue vê-lo. A exclusão pelo professor que o criou retira o material da lista de itens ativos. |
 
-## Review triggers
+## Quando revisar
 
-Coordinate changes to slot times, cohort membership, file rules or attendance status values across schedule validation, timetable editor, daily-record form and the student portal. [Schedule flow tests](../../internal/api/schedules_test.go)
+Ao mudar a duração ou os horários de aula, a matrícula na turma, as regras de arquivos ou os valores de frequência, revisar em conjunto a validação de horários, o editor da grade, o registro diário e o portal do aluno. [Testes do fluxo de horários](../../internal/api/schedules_test.go)

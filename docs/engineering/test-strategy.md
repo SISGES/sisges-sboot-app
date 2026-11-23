@@ -1,31 +1,31 @@
-# Test strategy and release evidence
+# Estratégia de testes e evidências para a entrega
 
-Use this matrix when changing a school workflow or releasing a pair of client and server builds. The commands and coverage describe backend `6b37a18` and frontend `b58d2df`. A test with stubbed browser traffic verifies client behavior for the supplied payload. Use the integrated path to establish compatibility with the server.
+Use esta matriz ao alterar um fluxo escolar ou preparar uma entrega conjunta do cliente e do servidor. Os comandos e a cobertura correspondem ao backend `6b37a18` e ao frontend `b58d2df`. Um teste de navegador com respostas simuladas verifica como o cliente trata aqueles dados. Execute também o fluxo integrado para verificar a compatibilidade com o servidor.
 
-| Risk | Existing checks | Additional release evidence for an affected change |
+| Risco | Verificações existentes | Evidência adicional ao alterar esse fluxo |
 | --- | --- | --- |
-| Session and academic data access | Go token tests, DB-backed login and password-change tests, Cypress auth and role-guard specs | Login and reload with real API validation, then compare allowed and denied reads for distinct roles and assignments. |
-| Weekly schedules and recorded lessons | Go validation, PostgreSQL schedule/lesson flow, stub object transfers, Cypress lesson-schedule spec | Verify stale-save recovery, an existing lesson after timetable changes and file reads from permitted accounts. |
-| Assessment and report cards | Cypress gradebook, grading configuration and boletim specs | Exercise a real scored activity through creation, draft grade, release and student report. Verify a second academic year with the school's expected results. |
-| Announcements, events and materials | Browser specs and one real announcement write/read flow. Go and Node tests for the event date window. | Confirm a second browser sees the right event audience and a feed refresh, and verify both HTTP and object storage on uploads. |
-| Persistence and migrations | PostgreSQL integration tests cover fresh startup, compatibility with Flyway history and schedule schema use. | Apply a candidate migration to a representative restored schema. Reconcile records and verify older clients during a staged rollout. |
+| Sessão e acesso a dados acadêmicos | Testes de token em Go, testes de login e mudança de senha com banco e testes de autenticação e de proteção por perfil no Cypress | Efetue login e recarregue a página usando a validação real da API. Compare as leituras permitidas e negadas para diferentes perfis e vínculos. |
+| Grade semanal e aulas registradas | Validação em Go, fluxo de grade e aula com PostgreSQL, transferências simuladas de objetos e testes de grade no Cypress | Verifique a recuperação após tentar salvar uma versão desatualizada, a preservação da aula após mudar a grade e o acesso aos arquivos por contas autorizadas. |
+| Avaliações e boletins | Testes Cypress de lançamento de notas, configuração da avaliação e boletim | Crie uma atividade real com pontuação, lance uma nota, libere-a e consulte o boletim do aluno. Teste um segundo ano letivo com os resultados esperados pela escola. |
+| Avisos, eventos e materiais | Testes de navegador, um fluxo real de publicação e leitura de aviso e testes em Go e Node do intervalo permitido para eventos | Confira em um segundo navegador o público do evento e a atualização do mural. No envio de arquivos, verifique a operação HTTP e a gravação no armazenamento de objetos. |
+| Persistência e migrações | Testes de integração com PostgreSQL cobrem a inicialização de um banco novo, a compatibilidade com o histórico do Flyway e o uso do esquema da grade | Aplique a migração candidata a uma cópia restaurada e representativa. Confira os registros e teste clientes antigos durante a implantação gradual. |
 
-[Go tests](../../internal/api/) · [Browser specs](https://github.com/SISGES/sisges-react-app/tree/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/cypress/e2e) · [Functional requirements](../product/prd.md)
+[Testes em Go](../../internal/api/) · [Testes de navegador](https://github.com/SISGES/sisges-react-app/tree/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/cypress/e2e) · [Requisitos funcionais](../product/prd.md)
 
 ## Backend
 
-From the backend root, with working Go tooling, run the following. For full integration coverage provide `SISGES_TEST_DATABASE_URL` for a **dedicated disposable PostgreSQL database** first. The tests create school fixtures and alter migration history. With the variable unset, database-dependent tests skip.
+Na raiz do backend, com as ferramentas de Go instaladas, execute os comandos abaixo. Para cobrir a integração com o banco, defina antes `SISGES_TEST_DATABASE_URL` apontando para um **banco PostgreSQL dedicado e descartável**. Os testes criam dados escolares fictícios e alteram o histórico de migrações. Sem essa variável, os testes que dependem do banco são pulados.
 
 ```sh
 go test -race -count=1 ./...
 go vet ./...
 ```
 
-For the SQL-backed paths alone, use `go test -v -run 'TestPostgresMigrationAndAuthFlow|TestScheduleAndDailyRecordsPostgres' ./internal/api` and confirm both actually ran. The race test and vet run against a PostgreSQL 16 service in the backend publishing and deployment workflows. [Integration fixture](../../internal/api/integration_test.go) · [Schedule cases](../../internal/api/schedules_test.go) · [Backend CI](../../.github/workflows/docker-publish.yml)
+Para executar apenas os dois fluxos com SQL, use `go test -v -run 'TestPostgresMigrationAndAuthFlow|TestScheduleAndDailyRecordsPostgres' ./internal/api` e confirme que ambos foram executados. As esteiras de publicação e implantação do backend executam os testes com detecção de condições de corrida e o `go vet`, com um serviço PostgreSQL 16 disponível. [Teste de integração](../../internal/api/integration_test.go) · [Casos da grade horária](../../internal/api/schedules_test.go) · [Integração contínua do backend](../../.github/workflows/docker-publish.yml)
 
 ## Frontend
 
-From the frontend root, install the locked dependencies and run the build, date tests and lint as separate checks.
+Na raiz do frontend, instale as dependências nas versões fixadas e execute separadamente a compilação, os testes de datas e a análise estática.
 
 ```sh
 npm ci
@@ -34,16 +34,16 @@ node --test tests/eventDateTime.test.mjs
 npm run lint
 ```
 
-The build type-checks and bundles the SPA. Lint has a zero-warning threshold. The Docker workflows run the build and do not invoke Cypress or the standalone date tests. [Scripts](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/package.json) · [Date tests](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/tests/eventDateTime.test.mjs) · [Image build](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/Dockerfile)
+A compilação verifica os tipos e gera a aplicação de página única. A análise estática exige zero avisos. As esteiras de imagens Docker compilam o frontend. O Cypress e os testes isolados de datas são verificações separadas. [Comandos do projeto](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/package.json) · [Testes de datas](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/tests/eventDateTime.test.mjs) · [Compilação da imagem](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/Dockerfile)
 
-Start the client first. With the local setup in this handbook, its origin is port 3001. The Cypress configuration otherwise defaults to port 3000. Cypress needs its matching binary and platform dependencies.
+Inicie o cliente antes do Cypress. No ambiente local deste manual, ele atende na porta 3001. A configuração padrão do Cypress usa a porta 3000. O Cypress precisa do binário compatível com a versão instalada e das dependências da plataforma.
 
 ```sh
 CYPRESS_BASE_URL=http://localhost:3001 npm run cypress:run:mock
 CYPRESS_BASE_URL=http://localhost:3001 npm run cypress:run:mock -- --spec cypress/e2e/lesson-schedule.cy.ts
 ```
 
-For the real API case, use an isolated seeded instance, set the API base to match the client's build, and supply local teacher credentials. The optional admin credentials allow the spec to remove its created announcement. At this baseline, the old V16 test users mentioned in a spec comment are not a dependable fixture. Use active users in the development seed. Keep local test credentials outside Git.
+Para o teste com a API real, use uma instância isolada com dados de demonstração. Configure a mesma URL base usada na compilação do cliente e forneça as credenciais locais de um professor. As credenciais opcionais de administrador permitem excluir o aviso criado pelo teste. Nesta revisão, os usuários antigos da V16 mencionados em um comentário do teste não são uma base confiável. Use contas ativas da carga de desenvolvimento e mantenha credenciais locais de teste fora do Git.
 
 ```sh
 CYPRESS_BASE_URL=http://localhost:3001 \
@@ -53,8 +53,8 @@ CYPRESS_ADMIN_EMAIL=adm0001@sisges.com CYPRESS_ADMIN_PASSWORD=admin123 \
 npm run cypress:run:integration
 ```
 
-The live case creates a text announcement from the UI and reads it back from the actual feed. Other fixtures can exercise flows that differ from the committed API. Capture the request and response with sensitive fields removed when a mock passes and the integrated flow fails. [Cypress config](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/cypress.config.ts) · [Live announcement case](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/cypress/e2e/announcement-create-api.cy.ts)
+O teste integrado cria um aviso de texto pela interface e o lê no mural real. Casos com dados simulados podem reproduzir comportamentos diferentes dos oferecidos pela API versionada. Quando o teste simulado passar e o integrado falhar, registre a requisição e a resposta, removendo campos sensíveis. [Configuração do Cypress](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/cypress.config.ts) · [Teste integrado de avisos](https://github.com/SISGES/sisges-react-app/blob/b58d2dfa6eb06dba6e3485325f2087dc5538c2dc/cypress/e2e/announcement-create-api.cy.ts)
 
-## Record a verification result
+## Registrar o resultado
 
-Record both revisions, database migration head, fixture roles and scope, exact checks run, pass/fail/skip counts and any remaining production-only validation. For academic changes include expected-versus-observed records. For deployments include image digests, health response and application smoke results. Re-run relevant checks when the route, schema, upload policy, school rules or client tooling changes.
+Registre as revisões do cliente e do servidor, a última migração aplicada, os perfis e o escopo dos dados de teste, as verificações executadas, as contagens de aprovações, falhas e testes pulados e o que ainda exige validação em produção. Para mudanças acadêmicas, compare os registros esperados e observados. Para implantações, inclua os identificadores das imagens por conteúdo, a resposta da verificação de saúde e os resultados dos testes básicos da aplicação. Repita as verificações afetadas por mudanças nas rotas, no esquema, nas regras de arquivos ou da escola ou nas ferramentas do cliente.

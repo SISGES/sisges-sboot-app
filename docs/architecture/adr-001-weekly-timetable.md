@@ -1,28 +1,28 @@
-# ADR 001 — Keep recurring timetables separate from dated lesson records
+# ADR 001 — Separação entre a grade semanal e os registros de aula por data
 
-Audience / owner role — academic workflow and backend engineers
+Público e responsabilidade — engenharia dos fluxos acadêmicos e do backend
 
-Status / scope — retrospective record of the implemented V24 design
+Situação e escopo — registro retrospectivo da decisão implementada na V24
 
-Source baseline — backend `6b37a18`, frontend `b58d2df`
+Revisões de referência — backend `6b37a18`, frontend `b58d2df`
 
-## Context
+## Contexto
 
-Administrators plan the weekly schedule by class and subject. Teachers record what happened on a particular date, attach files and later use that meeting's identity for attendance and assessments. Changing a recurring plan must preserve the historical subject, teacher and academic work attached to a recorded lesson. Older databases also contain manually created meetings with arbitrary times. [V24 migration](../../db/migration/V24__weekly_timetable_and_lesson_records.sql) · [Meeting handlers](../../internal/api/meetings.go)
+A administração planeja a grade semanal por turma e disciplina. O professor registra o que aconteceu em determinada data, anexa arquivos e usa o identificador daquela aula para lançar frequência e avaliações. Uma mudança na grade precisa preservar a disciplina, o professor e o trabalho acadêmico já registrado. Bases mais antigas também contêm aulas cadastradas manualmente, com horários livres. [Migração V24](../../db/migration/V24__weekly_timetable_and_lesson_records.sql) · [Operações de aula](../../internal/api/meetings.go)
 
-## Implemented decision
+## Decisão implementada
 
-1. Store one current weekly plan per class in `class_schedule`, keyed by class, weekday and slot. The five slot numbers map to fixed 50-minute intervals with a break from 09:30 to 09:45 and a final end time of 11:25. The database stores slot numbers, and Go defines the clock times. [Schedule handler](../../internal/api/schedules.go)
-2. Replace the complete plan atomically. The administrator sends the last observed class revision with the desired slots. The server locks the class row, checks revision and current class-subject membership, replaces the rows, and increments the revision. An empty slot list clears the future plan. [Schedule write](../../internal/api/schedules.go)
-3. Build a teacher's daily view from unrecorded eligible slots for the date's weekday plus the teacher's own existing scheduled meetings for that date. On first save, lock the class row, check current assignments and the slot, reject time overlaps, then persist the meeting. A partial unique index protects the active class/date/slot identity. On a subsequent authorized save, replace only content and attachments on the existing row. [Daily read and save](../../internal/api/schedules.go) · [Schema index](../../db/migration/V24__weekly_timetable_and_lesson_records.sql)
-4. Preserve the existing meeting tables and child foreign keys. Existing unslotted meetings retain their original time interval. The legacy manual-create endpoint returns a business error, and generic updates of a scheduled meeting direct the caller back to the scheduled-record flow. [Legacy meeting boundary](../../internal/api/meetings.go)
+1. Manter a grade semanal vigente de cada turma em `class_schedule`, com chave composta por turma, dia da semana e horário. Os cinco horários correspondem a períodos fixos de 50 minutos, com intervalo das 09:30 às 09:45 e término às 11:25. O banco armazena o número do horário e o código Go define seu início e fim. [Implementação da grade](../../internal/api/schedules.go)
+2. Substituir toda a grade em uma transação atômica. O administrador envia a última revisão consultada e os horários desejados. O servidor bloqueia a linha da turma, confere a revisão e os vínculos das disciplinas, substitui os horários e incrementa a revisão. Uma lista vazia limpa a grade para as aulas ainda sem registro. [Gravação da grade](../../internal/api/schedules.go)
+3. Montar a visão diária do professor com os horários do dia da semana que ele pode lecionar e ainda não registrou, mais as aulas da grade que ele já registrou naquela data. No primeiro salvamento, bloquear a linha da turma, verificar os vínculos e o horário, rejeitar sobreposições e gravar a aula. Um índice único parcial preserva a identidade da aula ativa por turma, data e horário. Ao salvar novamente com autorização, atualizar apenas o conteúdo e os anexos da mesma linha. [Consulta e registro por dia](../../internal/api/schedules.go) · [Índice no esquema](../../db/migration/V24__weekly_timetable_and_lesson_records.sql)
+4. Preservar as tabelas de aula e as chaves estrangeiras de seus registros dependentes. Aulas anteriores sem posição na grade mantêm os horários originais. A rota antiga de criação manual retorna um erro de regra de negócio. Ao tentar editar uma aula da grade pela rota genérica, o cliente recebe orientação para usar o fluxo de registro da grade. [Compatibilidade com aulas antigas](../../internal/api/meetings.go)
 
-## Consequences and limits
+## Consequências e limites
 
-For example, suppose a teacher records Monday's first slot as mathematics, then an administrator removes that slot. A subsequent read of that recorded Monday still returns the mathematics meeting. An unrecorded later Monday reflects the revised timetable. The change also affects unrecorded past dates because the weekly plan has no effective-date history. [Read query](../../internal/api/schedules.go) · [Record preservation test](../../internal/api/schedules_test.go)
+Suponha que o professor registre matemática no primeiro horário de uma segunda-feira e que a administração depois remova esse horário. A consulta daquela segunda-feira ainda apresenta a aula de matemática. Uma segunda-feira posterior sem registro já reflete a alteração. Datas passadas sem aula registrada também seguem a nova grade, pois o plano semanal não guarda histórico de vigência. [Consulta das aulas](../../internal/api/schedules.go) · [Teste de preservação do registro](../../internal/api/schedules_test.go)
 
-Using the class row as a shared lock serializes competing timetable and scheduled-record writes within that class, including writes for different dates. A stale timetable save returns HTTP 400 with `BUSINESS_RULE_VIOLATION`. The client must read the current revision and reconcile its draft. Lesson content itself has no revision field, so sequential edits by the same authorized teacher can replace earlier content. The lock and partial index preserve the meeting identity and its child relationships. [Schedule writes](../../internal/api/schedules.go) · [Application errors](../../internal/api/errors.go)
+A grade e os registros de aula disputam o bloqueio da mesma linha da turma, inclusive para datas diferentes. Uma revisão desatualizada da grade resulta em HTTP 400 com `BUSINESS_RULE_VIOLATION`. O cliente precisa consultar a revisão atual e conciliar o rascunho. O conteúdo da aula não tem campo de revisão. Edições sucessivas pelo mesmo professor autorizado podem substituir o conteúdo anterior. O bloqueio e o índice parcial preservam a identidade da aula e seus vínculos. [Gravação da grade e das aulas](../../internal/api/schedules.go) · [Erros da aplicação](../../internal/api/errors.go)
 
-## Review triggers
+## Quando revisar
 
-Revisit this design for effective-dated timetables, school-specific bells or holidays, cross-class teacher clash checks, multiple editors of one lesson, or per-school scheduling rules. Those capabilities would affect the schedule key, historical query, UI draft behavior or write contract. Update the V24 regression scenarios, data model and API reference with any replacement. [Database-backed scenarios](../../internal/api/schedules_test.go) · [Data model](data-model.md) · [API reference](../api/README.md)
+Reavaliar a decisão se houver grades com período de vigência, horários ou feriados por escola, verificação de conflitos do professor entre turmas, vários editores para uma aula ou regras próprias de cada escola. Esses requisitos podem mudar a chave da grade, a consulta histórica, os rascunhos da interface ou o contrato de gravação. Atualizar os cenários de regressão da V24, o modelo de dados e a referência da API junto com a mudança. [Cenários com banco de dados](../../internal/api/schedules_test.go) · [Modelo de dados](data-model.md) · [Referência da API](../api/README.md)

@@ -1,31 +1,31 @@
-# [Subject] — Data model
+# [Assunto] — Modelo de dados
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Entities and relationships
+## Entidades e relacionamentos
 
-[Identify schema, keys, cardinality, ownership and lifecycle.]
+[Identifique o esquema, as chaves, as cardinalidades, o responsável pelos dados e o ciclo de vida.]
 
-| Table | Primary / unique keys | Foreign keys and cardinality | Lifecycle and sensitivity |
+| Tabela | Chaves primárias e únicas | Chaves estrangeiras e cardinalidade | Ciclo de vida e sensibilidade |
 | --- | --- | --- | --- |
-| [Table] | [Primary / unique keys] | [Foreign keys and cardinality] | [Lifecycle and sensitivity] |
+| [Tabela] | [Chaves primárias e únicas] | [Chaves estrangeiras e cardinalidade] | [Ciclo de vida e sensibilidade] |
 
-## Invariants
+## Invariantes
 
-[Explain constraints enforced in SQL and application-only rules.]
+[Explique quais restrições o SQL garante e quais regras dependem da aplicação.]
 
-## Migrations and compatibility
+## Migrações e compatibilidade
 
-[Give ordering, history, transaction and verification details.]
+[Detalhe a ordem de execução, o histórico, os limites das transações e as verificações.]
 
-## Data handling
+## Tratamento dos dados
 
-[Identify sensitive fields, deletion behavior and unknown retention decisions.]
+[Identifique campos sensíveis, comportamento de exclusão e decisões de retenção pendentes.]
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

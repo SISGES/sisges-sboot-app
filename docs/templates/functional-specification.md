@@ -1,31 +1,31 @@
-# [Subject] — Functional specification
+# [Assunto] — Especificação funcional
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Actors and preconditions
+## Atores e pré-condições
 
-[Identify role, record scope and starting state.]
+[Identifique o perfil, os registros aos quais ele tem acesso e o estado inicial.]
 
-## Workflow and state changes
+## Fluxo e mudanças de estado
 
-[Describe entry point, inputs, validations, persistence and visible result.]
+[Descreva o ponto de entrada, os dados recebidos, as validações, o que fica gravado e o resultado visível.]
 
-## Exceptions and access
+## Exceções e acesso
 
-[Cover invalid input, empty states, conflicts, and role or ownership checks.]
+[Cubra entradas inválidas, estados vazios, conflitos e verificações de perfil ou de vínculo com o registro.]
 
-## Acceptance scenarios
+## Cenários de aceite
 
-[Give concrete Given/When/Then cases, including failure paths.]
+[Escreva exemplos concretos no formato Dado/Quando/Então. Inclua casos de falha.]
 
-| Given | When | Then | Requirement and verification |
+| Dado | Quando | Então | Requisito e verificação |
 | --- | --- | --- | --- |
-| [Given] | [When] | [Then] | [Requirement and verification] |
+| [Dado] | [Quando] | [Então] | [Requisito e verificação] |
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

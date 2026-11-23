@@ -1,27 +1,27 @@
-# [Subject] — Architecture decision record
+# [Assunto] — Registro de decisão arquitetural
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Status and context
+## Situação e contexto
 
-[Record observed, proposed or accepted state, date if known, and problem.]
+[Descreva o problema, a data, se conhecida, e a situação da decisão: observada na implementação, proposta ou aprovada.]
 
-## Decision and basis
+## Decisão e justificativa
 
-[Identify the choice, evidence, decision authority if known, and alternatives if evidenced.]
+[Registre a escolha e as evidências. Identifique quem decidiu e quais alternativas foram consideradas quando houver registro.]
 
-## Consequences and revisit criteria
+## Consequências e critérios para reavaliar
 
-[State operational costs, dependencies and conditions to reconsider.]
+[Descreva custos operacionais, dependências e condições que justificam rever a decisão.]
 
-| Consequence | Who or what is affected | Trigger to revisit |
+| Consequência | Pessoas ou componentes afetados | Condição para reavaliação |
 | --- | --- | --- |
-| [Consequence] | [Who or what is affected] | [Trigger to revisit] |
+| [Consequência] | [Pessoas ou componentes afetados] | [Condição para reavaliação] |
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]

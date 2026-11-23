@@ -1,31 +1,31 @@
-# [Subject] — Engineering guide
+# [Assunto] — Guia de engenharia
 
-Audience / owner role — [role]
+Público e responsável — [perfis envolvidos]
 
-Status / scope — [observed implementation, proposal, or approved decision]
+Situação e escopo — [implementação observada, proposta ou decisão aprovada]
 
-Source baseline — [repo, revision, relevant files or tests]
+Fontes de referência — [repositório, revisão, arquivos ou testes relevantes]
 
-## Prerequisites and structure
+## Pré-requisitos e estrutura
 
-[Name repository, dependencies, entry points and configuration.]
+[Identifique o repositório, as dependências, os pontos de entrada e as configurações.]
 
-## Working procedure
+## Procedimento
 
-[Provide commands with working directories, expected outputs and environment differences.]
+[Indique os comandos, os diretórios de execução, os resultados esperados e as diferenças entre ambientes.]
 
-## Integration conventions
+## Convenções de integração
 
-[Explain where to implement a change and which callers or contracts it must preserve.]
+[Explique onde implementar a alteração, quem chama o componente e quais contratos devem ser preservados.]
 
-## Verification and diagnosis
+## Verificação e diagnóstico
 
-[Give checks, common symptoms and their next diagnostic.]
+[Descreva verificações, sintomas frequentes e o próximo passo para investigá-los.]
 
-| Command or action | Expected result | Diagnosis if different |
+| Comando ou ação | Resultado esperado | O que investigar se o resultado divergir |
 | --- | --- | --- |
-| [Command or action] | [Expected result] | [Diagnosis if different] |
+| [Comando ou ação] | [Resultado esperado] | [O que investigar se o resultado divergir] |
 
-## Review triggers
+## Quando revisar
 
-[Name the change that invalidates this document and the related docs to check.]
+[Indique quais mudanças exigem revisar este documento e quais documentos relacionados devem ser conferidos.]
