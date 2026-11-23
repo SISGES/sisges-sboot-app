@@ -66,13 +66,6 @@ func (a *App) checkMeeting(r *http.Request, req meetingRequest, teacherID, exclu
 func (a *App) createMeeting(w http.ResponseWriter, r *http.Request) {
 	writeError(w, businessError("Selecione uma aula da grade horária para registrar o conteúdo."))
 }
-func (a *App) readMeetingSearch(r *http.Request, id int) (meetingSearch, error) {
-	var x meetingSearch
-	var date time.Time
-	err := a.db.QueryRow(r.Context(), `SELECT cm.id,cm.meeting_date,to_char(cm.start_time,'HH24:MI:SS'),to_char(cm.end_time,'HH24:MI:SS'),d.name,c.name,u.name FROM sisges.class_meeting cm JOIN sisges.discipline d ON d.id=cm.discipline_id JOIN sisges.school_class c ON c.id=cm.class_id LEFT JOIN sisges.teacher t ON t.id=cm.teacher_id AND t.deleted_at IS NULL LEFT JOIN sisges.users u ON u.id=t.user_id WHERE cm.id=$1 AND cm.deleted_at IS NULL`, id).Scan(&x.ID, &date, &x.StartTime, &x.EndTime, &x.DisciplineName, &x.ClassName, &x.TeacherName)
-	x.Date = date.Format("2006-01-02")
-	return x, err
-}
 func (a *App) searchMeetings(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Date         string `json:"date"`
@@ -84,11 +77,11 @@ func (a *App) searchMeetings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	p := currentPrincipal(r)
-	forced := 0
+	var teacherUserID *int
 	if p.Role == "TEACHER" {
-		forced, _ = a.teacherIDForUser(r, p.ID)
+		teacherUserID = &p.ID
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT cm.id,cm.meeting_date,to_char(cm.start_time,'HH24:MI:SS'),to_char(cm.end_time,'HH24:MI:SS'),d.name,c.name,u.name FROM sisges.class_meeting cm JOIN sisges.discipline d ON d.id=cm.discipline_id JOIN sisges.school_class c ON c.id=cm.class_id LEFT JOIN sisges.teacher t ON t.id=cm.teacher_id AND t.deleted_at IS NULL LEFT JOIN sisges.users u ON u.id=t.user_id WHERE cm.deleted_at IS NULL AND ($1='' OR cm.meeting_date=NULLIF($1,'')::date) AND ($2::int IS NULL OR cm.discipline_id=$2) AND ($3::int IS NULL OR cm.class_id=$3) AND ($4::int IS NULL OR cm.teacher_id=$4) AND ($5=0 OR cm.teacher_id=$5) ORDER BY cm.meeting_date DESC,cm.start_time LIMIT 1000`, req.Date, req.DisciplineID, req.ClassID, req.TeacherID, forced)
+	rows, err := a.db.Query(r.Context(), `SELECT cm.id,cm.meeting_date,to_char(cm.start_time,'HH24:MI:SS'),to_char(cm.end_time,'HH24:MI:SS'),d.name,c.name,u.name FROM sisges.class_meeting cm JOIN sisges.discipline d ON d.id=cm.discipline_id JOIN sisges.school_class c ON c.id=cm.class_id LEFT JOIN sisges.teacher t ON t.id=cm.teacher_id AND t.deleted_at IS NULL LEFT JOIN sisges.users u ON u.id=t.user_id WHERE cm.deleted_at IS NULL AND ($1='' OR cm.meeting_date=NULLIF($1,'')::date) AND ($2::int IS NULL OR cm.discipline_id=$2) AND ($3::int IS NULL OR cm.class_id=$3) AND ($4::int IS NULL OR cm.teacher_id=$4) AND ($5::int IS NULL OR t.user_id=$5) ORDER BY cm.meeting_date DESC,cm.start_time LIMIT 1000`, req.Date, req.DisciplineID, req.ClassID, req.TeacherID, teacherUserID)
 	if err != nil {
 		writeError(w, internalError(err))
 		return
@@ -107,6 +100,7 @@ func (a *App) searchMeetings(w http.ResponseWriter, r *http.Request) {
 }
 
 type meetingDetail struct {
+	DisciplineID int                `json:"disciplineId"`
 	ScheduleSlot *int               `json:"scheduleSlot"`
 	Content      string             `json:"content"`
 	Attachments  []lessonAttachment `json:"attachments"`
@@ -127,9 +121,9 @@ func (a *App) writeMeeting(w http.ResponseWriter, r *http.Request, id int) {
 	p := currentPrincipal(r)
 	var x meetingDetail
 	var date time.Time
-	var tid *int
+	var tid, teacherUserID *int
 	var tn, te *string
-	err := a.db.QueryRow(r.Context(), `SELECT cm.id,cm.meeting_date,to_char(cm.start_time,'HH24:MI:SS'),to_char(cm.end_time,'HH24:MI:SS'),c.id,c.name,c.academic_year,t.id,u.name,u.email FROM sisges.class_meeting cm JOIN sisges.school_class c ON c.id=cm.class_id LEFT JOIN sisges.teacher t ON t.id=cm.teacher_id AND t.deleted_at IS NULL LEFT JOIN sisges.users u ON u.id=t.user_id WHERE cm.id=$1 AND cm.deleted_at IS NULL`, id).Scan(&x.ID, &date, &x.StartTime, &x.EndTime, &x.ClassInfo.ID, &x.ClassInfo.Name, &x.ClassInfo.AcademicYear, &tid, &tn, &te)
+	err := a.db.QueryRow(r.Context(), `SELECT cm.id,cm.discipline_id,cm.meeting_date,to_char(cm.start_time,'HH24:MI:SS'),to_char(cm.end_time,'HH24:MI:SS'),c.id,c.name,c.academic_year,t.id,u.id,u.name,u.email FROM sisges.class_meeting cm JOIN sisges.school_class c ON c.id=cm.class_id LEFT JOIN sisges.teacher t ON t.id=cm.teacher_id AND t.deleted_at IS NULL LEFT JOIN sisges.users u ON u.id=t.user_id WHERE cm.id=$1 AND cm.deleted_at IS NULL`, id).Scan(&x.ID, &x.DisciplineID, &date, &x.StartTime, &x.EndTime, &x.ClassInfo.ID, &x.ClassInfo.Name, &x.ClassInfo.AcademicYear, &tid, &teacherUserID, &tn, &te)
 	if err != nil {
 		writeError(w, resourceError("Aula"))
 		return
@@ -151,15 +145,15 @@ func (a *App) writeMeeting(w http.ResponseWriter, r *http.Request, id int) {
 		return
 	}
 	x.Date = date.Format("2006-01-02")
-	if tid != nil {
-		x.Teacher = &teacherSimple{*tid, *tn, *te}
+	if tid != nil && teacherUserID != nil {
+		x.Teacher = &teacherSimple{ID: *tid, UserID: *teacherUserID, Name: *tn, Email: *te}
 	}
 	x.ClassInfo.Students = []studentSimple{}
-	rows, err := a.db.Query(r.Context(), `SELECT s.id,u.name,u.email,at.present FROM sisges.student s JOIN sisges.users u ON u.id=s.user_id LEFT JOIN sisges.attendance at ON at.student_id=s.id AND at.class_meeting_id=$2 AND at.deleted_at IS NULL WHERE s.class_id=$1 AND s.deleted_at IS NULL ORDER BY u.name`, x.ClassInfo.ID, id)
+	rows, err := a.db.Query(r.Context(), `SELECT s.id,u.id,u.name,u.email,at.present FROM sisges.student s JOIN sisges.users u ON u.id=s.user_id LEFT JOIN sisges.attendance at ON at.student_id=s.id AND at.class_meeting_id=$2 AND at.deleted_at IS NULL WHERE s.class_id=$1 AND s.deleted_at IS NULL ORDER BY u.name`, x.ClassInfo.ID, id)
 	if err == nil {
 		for rows.Next() {
 			var y studentSimple
-			if rows.Scan(&y.ID, &y.Name, &y.Email, &y.Present) == nil {
+			if rows.Scan(&y.ID, &y.UserID, &y.Name, &y.Email, &y.Present) == nil {
 				x.ClassInfo.Students = append(x.ClassInfo.Students, y)
 			}
 		}
@@ -175,6 +169,11 @@ func (a *App) meetingByID(w http.ResponseWriter, r *http.Request) {
 	}
 	a.writeMeeting(w, r, id)
 }
+func (req meetingRequest) canEditAsTeacher(teacherID int, owner *int) bool {
+	return teacherID > 0 && owner != nil && *owner == teacherID &&
+		(req.TeacherID == nil || *req.TeacherID == teacherID)
+}
+
 func (a *App) updateMeeting(w http.ResponseWriter, r *http.Request) {
 	id, e := pathInt(r, "id")
 	if e != nil {
@@ -182,7 +181,8 @@ func (a *App) updateMeeting(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var scheduled bool
-	if err := a.db.QueryRow(r.Context(), `SELECT schedule_slot IS NOT NULL FROM sisges.class_meeting WHERE id=$1 AND deleted_at IS NULL`, id).Scan(&scheduled); err != nil {
+	var owner *int
+	if err := a.db.QueryRow(r.Context(), `SELECT schedule_slot IS NOT NULL,teacher_id FROM sisges.class_meeting WHERE id=$1 AND deleted_at IS NULL`, id).Scan(&scheduled, &owner); err != nil {
 		writeError(w, resourceError("Aula"))
 		return
 	}
@@ -200,22 +200,25 @@ func (a *App) updateMeeting(w http.ResponseWriter, r *http.Request) {
 	}
 	p := currentPrincipal(r)
 	var tid int
+	var requiredOwner *int
 	if p.Role == "TEACHER" {
-		tid, _ = a.teacherIDForUser(r, p.ID)
-		if req.TeacherID != nil && *req.TeacherID != tid {
+		var err error
+		tid, err = a.teacherIDForUser(r, p.ID)
+		if err != nil || !req.canEditAsTeacher(tid, owner) {
 			writeError(w, forbidden())
 			return
 		}
+		requiredOwner = &tid
 	} else if req.TeacherID != nil {
 		tid = *req.TeacherID
-	} else {
-		_ = a.db.QueryRow(r.Context(), `SELECT teacher_id FROM sisges.class_meeting WHERE id=$1`, id).Scan(&tid)
+	} else if owner != nil {
+		tid = *owner
 	}
 	if err := a.checkMeeting(r, req, tid, id); err != nil {
 		writeError(w, err)
 		return
 	}
-	tag, err := a.db.Exec(r.Context(), `UPDATE sisges.class_meeting SET class_id=$2,discipline_id=$3,teacher_id=$4,meeting_date=$5,start_time=$6,end_time=$7 WHERE id=$1 AND deleted_at IS NULL`, id, req.ClassID, req.DisciplineID, tid, req.Date, req.StartTime, req.EndTime)
+	tag, err := a.db.Exec(r.Context(), `UPDATE sisges.class_meeting SET class_id=$2,discipline_id=$3,teacher_id=$4,meeting_date=$5,start_time=$6,end_time=$7 WHERE id=$1 AND deleted_at IS NULL AND schedule_slot IS NULL AND ($8::int IS NULL OR teacher_id=$8)`, id, req.ClassID, req.DisciplineID, tid, req.Date, req.StartTime, req.EndTime, requiredOwner)
 	if err != nil {
 		writeError(w, internalError(err))
 		return
@@ -232,13 +235,35 @@ func (a *App) deleteMeeting(w http.ResponseWriter, r *http.Request) {
 		writeError(w, e)
 		return
 	}
-	tag, err := a.db.Exec(r.Context(), `UPDATE sisges.class_meeting SET deleted_at=now() WHERE id=$1 AND deleted_at IS NULL`, id)
+	ctx := r.Context()
+	tx, err := a.academicTx(ctx, true)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	defer tx.Rollback(ctx)
+	var released bool
+	err = tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM sisges.evaluative_activity
+		WHERE class_meeting_id=$1 AND deleted_at IS NULL AND released)`, id).Scan(&released)
+	if err != nil {
+		writeError(w, err)
+		return
+	}
+	if released {
+		writeError(w, businessError("Não é possível excluir uma aula com notas liberadas."))
+		return
+	}
+	tag, err := tx.Exec(ctx, `UPDATE sisges.class_meeting SET deleted_at=now() WHERE id=$1 AND deleted_at IS NULL`, id)
 	if err != nil {
 		writeError(w, internalError(err))
 		return
 	}
 	if tag.RowsAffected() == 0 {
 		writeError(w, resourceError("Aula"))
+		return
+	}
+	if err = tx.Commit(ctx); err != nil {
+		writeError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

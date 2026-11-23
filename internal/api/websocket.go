@@ -23,10 +23,10 @@ type feedHub struct {
 	max     int
 }
 type feedClient struct {
-	conn       net.Conn
-	send       chan []byte
-	subscribed atomic.Bool
-	writeMu    sync.Mutex
+	conn         net.Conn
+	send         chan []byte
+	subscription atomic.Pointer[string]
+	writeMu      sync.Mutex
 }
 
 func (c *feedClient) write(opcode byte, payload []byte) error {
@@ -58,13 +58,14 @@ func (h *feedHub) broadcast(event string, id int) {
 		Type           string `json:"type"`
 		AnnouncementID int    `json:"announcementId"`
 	}{event, id})
-	frame := []byte(fmt.Sprintf("MESSAGE\ndestination:/topic/feed\ncontent-type:application/json\ncontent-length:%d\n\n%s\x00", len(body), body))
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for c := range h.clients {
-		if !c.subscribed.Load() {
+		subscription := c.subscription.Load()
+		if subscription == nil {
 			continue
 		}
+		frame := fmt.Appendf(nil, "MESSAGE\ndestination:/topic/feed\nsubscription:%s\nmessage-id:%d\ncontent-type:application/json\ncontent-length:%d\n\n%s\x00", *subscription, time.Now().UnixNano(), len(body), body)
 		select {
 		case c.send <- frame:
 		default:
@@ -88,6 +89,19 @@ func (a *App) webSocketFeed(w http.ResponseWriter, r *http.Request) {
 		writeError(w, validationError("Sec-WebSocket-Key", "Chave WebSocket ausente"))
 		return
 	}
+	var protocolHeader string
+	if offered := r.Header.Get("Sec-WebSocket-Protocol"); offered != "" {
+		for _, protocol := range strings.Split(offered, ",") {
+			if strings.TrimSpace(protocol) == "v12.stomp" {
+				protocolHeader = "Sec-WebSocket-Protocol: v12.stomp\r\n"
+				break
+			}
+		}
+		if protocolHeader == "" {
+			writeError(w, validationError("Sec-WebSocket-Protocol", "Subprotocolo STOMP 1.2 obrigatório"))
+			return
+		}
+	}
 	hj, ok := w.(http.Hijacker)
 	if !ok {
 		writeError(w, internalError(fmt.Errorf("websocket hijacking unavailable")))
@@ -99,7 +113,7 @@ func (a *App) webSocketFeed(w http.ResponseWriter, r *http.Request) {
 	}
 	sum := sha1.Sum([]byte(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"))
 	accept := base64.StdEncoding.EncodeToString(sum[:])
-	_, e = fmt.Fprintf(rw, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n\r\n", accept)
+	_, e = fmt.Fprintf(rw, "HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n%s\r\n", accept, protocolHeader)
 	if e == nil {
 		e = rw.Flush()
 	}
@@ -113,14 +127,13 @@ func (a *App) webSocketFeed(w http.ResponseWriter, r *http.Request) {
 		_ = conn.Close()
 		return
 	}
-	go a.runFeedClient(client)
+	go a.runFeedClient(client, rw.Reader)
 }
-func (a *App) runFeedClient(c *feedClient) {
+func (a *App) runFeedClient(c *feedClient, reader *bufio.Reader) {
 	defer func() { a.feed.remove(c); _ = c.conn.Close() }()
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		reader := bufio.NewReaderSize(c.conn, 4096)
 		for {
 			_ = c.conn.SetReadDeadline(time.Now().Add(2 * time.Minute))
 			opcode, payload, e := readWSFrame(reader)
@@ -133,12 +146,18 @@ func (a *App) runFeedClient(c *feedClient) {
 			case 9:
 				_ = c.write(10, payload)
 			case 1:
-				msg := string(payload)
-				if strings.HasPrefix(msg, "CONNECT") || strings.HasPrefix(msg, "STOMP") {
-					_ = c.write(1, []byte("CONNECTED\nversion:1.2\nheart-beat:0,0\n\n\x00"))
-				}
-				if strings.HasPrefix(msg, "SUBSCRIBE") && strings.Contains(msg, "destination:/topic/feed") {
-					c.subscribed.Store(true)
+				command, headers := parseFeedFrame(string(payload))
+				switch command {
+				case "CONNECT", "STOMP":
+					_ = c.write(1, []byte("CONNECTED\nversion:1.2\nheart-beat:0,10000\n\n\x00"))
+				case "SUBSCRIBE":
+					if id := headers["id"]; headers["destination"] == "/topic/feed" && id != "" && len(id) <= 128 && !strings.ContainsAny(id, "\r\x00") {
+						c.subscription.Store(&id)
+					}
+				case "UNSUBSCRIBE":
+					if subscription := c.subscription.Load(); subscription != nil && *subscription == headers["id"] {
+						c.subscription.Store(nil)
+					}
 				}
 			}
 		}
@@ -156,6 +175,23 @@ func (a *App) runFeedClient(c *feedClient) {
 			}
 		}
 	}
+}
+
+func parseFeedFrame(message string) (string, map[string]string) {
+	message = strings.TrimLeft(message, "\r\n")
+	command, remainder, _ := strings.Cut(message, "\n")
+	headers := make(map[string]string)
+	for _, line := range strings.Split(remainder, "\n") {
+		line = strings.TrimSuffix(line, "\r")
+		if line == "" {
+			break
+		}
+		key, value, ok := strings.Cut(line, ":")
+		if ok {
+			headers[key] = value
+		}
+	}
+	return strings.TrimSuffix(command, "\r"), headers
 }
 func writeAll(w io.Writer, b []byte) error {
 	for len(b) > 0 {

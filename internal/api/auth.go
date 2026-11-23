@@ -77,13 +77,6 @@ func (a *App) authenticate(r *http.Request) (*principal, error) {
 	return p, nil
 }
 
-func (a *App) optionalPrincipal(r *http.Request) *principal {
-	if r.Header.Get("Authorization") == "" {
-		return nil
-	}
-	p, _ := a.authenticate(r)
-	return p
-}
 func currentPrincipal(r *http.Request) *principal {
 	p, _ := r.Context().Value(principalKey{}).(*principal)
 	return p

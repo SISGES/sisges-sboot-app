@@ -80,6 +80,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("POST /api/teachers/search", a.require("ADMIN", a.searchTeachers))
 	mux.HandleFunc("GET /api/teachers/me", a.require("TEACHER", a.teacherMe))
 	mux.HandleFunc("GET /api/teachers/{id}", a.require("ADMIN", a.teacherByID))
+	mux.HandleFunc("POST /api/responsibles/search", a.require("ADMIN", a.searchResponsibles))
 	mux.HandleFunc("POST /api/students/search", a.require("ADMIN", a.searchStudents))
 	mux.HandleFunc("GET /api/students/me/turma", a.require("STUDENT", a.studentMyClass))
 	mux.HandleFunc("GET /api/students/me/faltas-por-disciplina", a.require("STUDENT", a.studentAbsences))
@@ -123,7 +124,7 @@ func (a *App) routes() http.Handler {
 	mux.HandleFunc("PUT /api/activities/{id}/grades", a.requireAny([]string{"ADMIN", "TEACHER"}, a.saveGrades))
 	mux.HandleFunc("POST /api/activities/{id}/release", a.requireAny([]string{"ADMIN", "TEACHER"}, a.releaseActivity))
 
-	mux.HandleFunc("GET /api/announcements/feed", a.announcementFeed)
+	mux.HandleFunc("GET /api/announcements/feed", a.require("", a.announcementFeed))
 	mux.HandleFunc("GET /api/announcements", a.require("ADMIN", a.allAnnouncements))
 	mux.HandleFunc("GET /api/announcements/{id}", a.require("ADMIN", a.announcementByID))
 	mux.HandleFunc("POST /api/announcements", a.requireAny([]string{"ADMIN", "TEACHER"}, a.createAnnouncement))

@@ -20,7 +20,7 @@ import (
 
 const maxUploadSize int64 = 10 << 20
 
-var allowedLessonExtensions = map[string]bool{".pdf": true, ".txt": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true}
+var allowedDocumentExtensions = map[string]bool{".pdf": true, ".txt": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".ppt": true, ".pptx": true}
 
 var allowedImageExtensions = map[string]bool{".png": true, ".jpg": true, ".jpeg": true, ".gif": true, ".webp": true}
 
@@ -154,7 +154,7 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	defer part.Close()
 	ext := strings.ToLower(filepath.Ext(filepath.Base(part.FileName())))
-	if !allowedImageExtensions[ext] && !allowedLessonExtensions[ext] {
+	if !allowedImageExtensions[ext] && !allowedDocumentExtensions[ext] {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Tipo de arquivo não permitido. Use imagens, PDF, TXT ou documentos Office"})
 		return
 	}
@@ -194,15 +194,17 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 		_ = field.Close()
 	}
 	subdir = validSubdir(subdir)
-	if !allowedImagePrefix(subdir) && subdir != "lesson-files" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Destino de imagem não permitido"})
+	isAttachment := subdir == "lesson-files" || subdir == "materials" || subdir == "activities"
+	if !allowedImagePrefix(subdir) && !isAttachment {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Destino de arquivo não permitido"})
 		return
 	}
-	if subdir == "lesson-files" {
-		subdir = fmt.Sprintf("lesson-files/%d", currentPrincipal(r).ID)
-	} else if !allowedImageExtensions[ext] {
+	if !isAttachment && !allowedImageExtensions[ext] {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Este destino aceita apenas imagens"})
 		return
+	}
+	if isAttachment || subdir == postImagePrefix {
+		subdir = fmt.Sprintf("%s/%d", subdir, currentPrincipal(r).ID)
 	}
 	id, e := randomID()
 	if e != nil {
@@ -231,18 +233,117 @@ func (a *App) uploadFile(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"path": "/api/files/" + key})
 }
+
+// Novas referências devem usar a chave gerada para o usuário e o destino da publicação.
+func validOwnedUpload(filePath, destination string, userID int) bool {
+	prefix := fmt.Sprintf("/api/files/%s/%d/", destination, userID)
+	name, ok := strings.CutPrefix(filePath, prefix)
+	ext := path.Ext(name)
+	id := strings.TrimSuffix(name, ext)
+	if !ok || len(id) != 32 || !(allowedImageExtensions[ext] || (destination != postImagePrefix && allowedDocumentExtensions[ext])) {
+		return false
+	}
+	_, err := hex.DecodeString(id)
+	return err == nil
+}
+
+func validateRecordFile(filePath *string, destination string, userID int) error {
+	if filePath == nil || *filePath == "" || validOwnedUpload(*filePath, destination, userID) {
+		return nil
+	}
+	return validationError("filePath", "Envie o arquivo para este tipo de registro com a conta atual")
+}
+
+func (a *App) canReadPostImage(r *http.Request, name string) (bool, error) {
+	// O MinIO gravava announcements/ e o armazenamento local usava /uploads/.
+	paths := []string{
+		"/api/files/post-img/" + name, "/uploads/post-img/" + name, "post-img/" + name,
+		"/api/files/announcements/" + name, "/uploads/announcements/" + name, "announcements/" + name,
+	}
+	var visible bool
+	err := a.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM sisges.announcement a
+		WHERE a.deleted_at IS NULL AND a.image_path=ANY($2::text[]) AND (`+visibleAnnouncement+`))`, currentPrincipal(r).Role, paths).Scan(&visible)
+	return visible, err
+}
+
+// Reconhece os caminhos emitidos pelo armazenamento local legado e pela API.
+func (a *App) canReadRecordFile(r *http.Request, destination, key string) (bool, error) {
+	p := currentPrincipal(r)
+	paths := []string{"/api/files/" + key, "/uploads/" + key, key}
+	const material = `SELECT 1
+		FROM sisges.discipline_material m
+		JOIN sisges.school_class c ON c.id=m.class_id AND c.deleted_at IS NULL
+		WHERE m.deleted_at IS NULL AND m.file_path=ANY($1::text[])
+		  AND (EXISTS (SELECT 1 FROM sisges.student s WHERE s.user_id=$2 AND s.class_id=m.class_id AND s.deleted_at IS NULL)
+		    OR EXISTS (SELECT 1 FROM sisges.teacher t
+		        JOIN sisges.teacher_class tc ON tc.teacher_id=t.id AND tc.class_id=m.class_id AND tc.deleted_at IS NULL
+		        JOIN sisges.discipline_teacher dt ON dt.teacher_id=t.id AND dt.discipline_id=m.discipline_id
+		        WHERE t.user_id=$2 AND t.deleted_at IS NULL))`
+	const activity = `SELECT 1
+		FROM sisges.evaluative_activity ea
+		JOIN sisges.class_meeting cm ON cm.id=ea.class_meeting_id AND cm.deleted_at IS NULL
+		WHERE ea.deleted_at IS NULL AND ea.file_path=ANY($1::text[])
+		  AND (EXISTS (SELECT 1 FROM sisges.activity_grade g JOIN sisges.student s ON s.id=g.student_id WHERE g.activity_id=ea.id AND s.user_id=$2 AND s.deleted_at IS NULL)
+		    OR EXISTS (SELECT 1 FROM sisges.teacher t WHERE t.user_id=$2 AND t.id=cm.teacher_id AND t.deleted_at IS NULL))`
+	var query string
+	switch destination {
+	case "materials":
+		query = material
+	case "activities":
+		query = activity
+	case "general":
+		query = material + " UNION ALL " + activity
+	default:
+		return false, nil
+	}
+	var allowed bool
+	err := a.db.QueryRow(r.Context(), "SELECT EXISTS("+query+")", paths, p.ID).Scan(&allowed)
+	return allowed, err
+}
+
 func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 	if a.storage == nil {
 		writeError(w, resourceError("Arquivo"))
 		return
 	}
-	key := path.Clean(strings.TrimPrefix(r.PathValue("key"), "/"))
-	if key == "." || key == ".." || strings.HasPrefix(key, "../") || (!allowedImageKey(key) && !strings.HasPrefix(key, "lesson-files/")) {
+	key := r.PathValue("key")
+	destination, name, _ := strings.Cut(key, "/")
+	if destination == "announcements" {
+		destination = postImagePrefix
+		key = destination + "/" + name
+	}
+	recordFile := destination == "materials" || destination == "activities" || destination == "general"
+	if name == "" || path.Clean(key) != key || strings.ContainsAny(key, "\\\x00") || (!allowedImageKey(key) && destination != "lesson-files" && !recordFile) {
 		writeError(w, validationError("key", "Caminho de arquivo inválido"))
 		return
 	}
-	if strings.HasPrefix(key, "lesson-files/") {
-		p := currentPrincipal(r)
+	p := currentPrincipal(r)
+	if destination == postImagePrefix {
+		w.Header().Set("Cache-Control", "private, no-store")
+		if p.Role != "ADMIN" {
+			visible, err := a.canReadPostImage(r, name)
+			if err != nil {
+				writeError(w, internalError(err))
+				return
+			}
+			if !visible {
+				writeError(w, resourceError("Arquivo"))
+				return
+			}
+		}
+	}
+	if recordFile && p.Role != "ADMIN" {
+		allowed, err := a.canReadRecordFile(r, destination, key)
+		if err != nil {
+			writeError(w, internalError(err))
+			return
+		}
+		if !allowed {
+			writeError(w, forbidden())
+			return
+		}
+	}
+	if destination == "lesson-files" {
 		ownerPrefix := fmt.Sprintf("lesson-files/%d/", p.ID)
 		if p.Role != "ADMIN" && !strings.HasPrefix(key, ownerPrefix) {
 			var allowed bool
@@ -256,6 +357,8 @@ func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
+	}
+	if recordFile || destination == "lesson-files" {
 		w.Header().Set("Content-Disposition", "attachment")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 	}
@@ -275,7 +378,9 @@ func (a *App) downloadFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", resp.Header.Get("Content-Type"))
-	w.Header().Set("Cache-Control", "private, max-age=300")
+	if destination != postImagePrefix {
+		w.Header().Set("Cache-Control", "private, max-age=300")
+	}
 	if v := resp.Header.Get("Content-Length"); v != "" {
 		w.Header().Set("Content-Length", v)
 	}

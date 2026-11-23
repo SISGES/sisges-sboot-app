@@ -38,6 +38,7 @@ jobs:
 
     env:
       SISGES_TEST_DATABASE_URL: postgresql://sisges:sisges@127.0.0.1:5432/sisges_test
+      SISGES_TEST_CYCLE_DATABASE_URL: postgresql://sisges:sisges@127.0.0.1:5432/sisges_cycle_test
 
     steps:
       - name: Checkout
@@ -51,6 +52,7 @@ jobs:
 
       - name: Verify backend
         run: |
+          psql "$SISGES_TEST_DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE DATABASE sisges_cycle_test'
           go test -race ./...
           go vet ./...
 

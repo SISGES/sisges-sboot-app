@@ -314,9 +314,10 @@ func (a *App) searchUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 type personSearch struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	UserID int    `json:"userId,omitempty"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
 }
 
 func (a *App) searchPeople(w http.ResponseWriter, r *http.Request, table string) {
@@ -327,7 +328,7 @@ func (a *App) searchPeople(w http.ResponseWriter, r *http.Request, table string)
 	if r.ContentLength != 0 && !decodeJSON(w, r, &req) {
 		return
 	}
-	q := `SELECT p.id,u.name,u.email FROM sisges.` + table + ` p JOIN sisges.users u ON u.id=p.user_id WHERE p.deleted_at IS NULL AND u.deleted_at IS NULL AND ($1='' OR u.name ILIKE '%'||$1||'%') AND ($2='' OR u.email ILIKE '%'||$2||'%') ORDER BY u.name LIMIT 1000`
+	q := `SELECT p.id,u.id,u.name,u.email FROM sisges.` + table + ` p JOIN sisges.users u ON u.id=p.user_id WHERE p.deleted_at IS NULL AND u.deleted_at IS NULL AND ($1='' OR u.name ILIKE '%'||$1||'%') AND ($2='' OR u.email ILIKE '%'||$2||'%') ORDER BY u.name LIMIT 1000`
 	rows, err := a.db.Query(r.Context(), q, req.Name, req.Email)
 	if err != nil {
 		writeError(w, internalError(err))
@@ -337,7 +338,7 @@ func (a *App) searchPeople(w http.ResponseWriter, r *http.Request, table string)
 	out := make([]personSearch, 0, 64)
 	for rows.Next() {
 		var x personSearch
-		if err := rows.Scan(&x.ID, &x.Name, &x.Email); err != nil {
+		if err := rows.Scan(&x.ID, &x.UserID, &x.Name, &x.Email); err != nil {
 			writeError(w, internalError(err))
 			return
 		}

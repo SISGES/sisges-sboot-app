@@ -6,15 +6,17 @@ import (
 )
 
 type studentSimple struct {
+	UserID  int    `json:"userId,omitempty"`
 	ID      int    `json:"id"`
 	Name    string `json:"name"`
 	Email   string `json:"email"`
 	Present *bool  `json:"present"`
 }
 type teacherSimple struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
+	UserID int    `json:"userId,omitempty"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Email  string `json:"email"`
 }
 
 func (a *App) studentMyClass(w http.ResponseWriter, r *http.Request) {
@@ -95,6 +97,39 @@ type responsibleResponse struct {
 	Phone string `json:"phone"`
 	Email string `json:"email"`
 }
+
+func (a *App) searchResponsibles(w http.ResponseWriter, r *http.Request) {
+	var filters struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	}
+	if r.ContentLength != 0 && !decodeJSON(w, r, &filters) {
+		return
+	}
+	rows, err := a.db.Query(r.Context(), `SELECT id,name,phone,email FROM sisges.student_responsible
+        WHERE deleted_at IS NULL AND name ILIKE '%'||$1||'%' AND email ILIKE '%'||$2||'%'
+        ORDER BY name,id LIMIT 1000`, filters.Name, filters.Email)
+	if err != nil {
+		writeError(w, internalError(err))
+		return
+	}
+	defer rows.Close()
+	out := []responsibleResponse{}
+	for rows.Next() {
+		var guardian responsibleResponse
+		if err := rows.Scan(&guardian.ID, &guardian.Name, &guardian.Phone, &guardian.Email); err != nil {
+			writeError(w, internalError(err))
+			return
+		}
+		out = append(out, guardian)
+	}
+	if err := rows.Err(); err != nil {
+		writeError(w, internalError(err))
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
 type studentDetail struct {
 	ID           int                   `json:"id"`
 	Name         string                `json:"name"`

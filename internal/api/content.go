@@ -1,10 +1,13 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type materialResponse struct {
@@ -25,19 +28,24 @@ func (a *App) listMaterials(w http.ResponseWriter, r *http.Request) {
 	classID, _ := strconv.Atoi(r.URL.Query().Get("classId"))
 	discID, _ := strconv.Atoi(r.URL.Query().Get("disciplineId"))
 	teacherID := 0
+	var err error
 	if p.Role == "STUDENT" {
-		_ = a.db.QueryRow(r.Context(), `SELECT COALESCE(class_id,0) FROM sisges.student WHERE user_id=$1 AND deleted_at IS NULL`, p.ID).Scan(&classID)
-	} else if p.Role == "TEACHER" {
-		if classID == 0 {
-			writeError(w, validationError("classId", "Turma é obrigatória"))
-			return
-		}
-		teacherID, _ = a.teacherIDForUser(r, p.ID)
+		err = a.db.QueryRow(r.Context(), `SELECT COALESCE(class_id,0) FROM sisges.student WHERE user_id=$1 AND deleted_at IS NULL`, p.ID).Scan(&classID)
 	} else if classID == 0 {
 		writeError(w, validationError("classId", "Turma é obrigatória"))
 		return
+	} else if p.Role == "TEACHER" {
+		teacherID, err = a.teacherIDForUser(r, p.ID)
 	}
-	rows, err := a.db.Query(r.Context(), `SELECT m.id,d.id,d.name,c.id,c.name,m.title,m.description,m.material_type,m.file_path,m.created_at FROM sisges.discipline_material m JOIN sisges.discipline d ON d.id=m.discipline_id LEFT JOIN sisges.school_class c ON c.id=m.class_id WHERE m.deleted_at IS NULL AND m.class_id=$1 AND ($2=0 OR m.discipline_id=$2) AND ($3=0 OR EXISTS(SELECT 1 FROM sisges.discipline_teacher dt WHERE dt.discipline_id=m.discipline_id AND dt.teacher_id=$3)) ORDER BY m.created_at DESC LIMIT 1000`, classID, discID, teacherID)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeJSON(w, http.StatusOK, []materialResponse{})
+		return
+	}
+	if err != nil {
+		writeError(w, internalError(err))
+		return
+	}
+	rows, err := a.db.Query(r.Context(), `SELECT m.id,d.id,d.name,c.id,c.name,m.title,m.description,m.material_type,m.file_path,m.created_at FROM sisges.discipline_material m JOIN sisges.discipline d ON d.id=m.discipline_id JOIN sisges.school_class c ON c.id=m.class_id AND c.deleted_at IS NULL WHERE m.deleted_at IS NULL AND m.class_id=$1 AND ($2=0 OR m.discipline_id=$2) AND ($3=0 OR EXISTS(SELECT 1 FROM sisges.discipline_teacher dt JOIN sisges.teacher_class tc ON tc.teacher_id=dt.teacher_id AND tc.class_id=m.class_id AND tc.deleted_at IS NULL WHERE dt.discipline_id=m.discipline_id AND dt.teacher_id=$3)) ORDER BY m.created_at DESC LIMIT 1000`, classID, discID, teacherID)
 	if err != nil {
 		writeError(w, internalError(err))
 		return
@@ -66,6 +74,10 @@ func (a *App) createMaterial(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.TrimSpace(req.Title) == "" {
 		writeError(w, validationError("title", "Título é obrigatório"))
+		return
+	}
+	if err := validateRecordFile(req.FilePath, "materials", currentPrincipal(r).ID); err != nil {
+		writeError(w, err)
 		return
 	}
 	tid, err := a.teacherIDForUser(r, currentPrincipal(r).ID)
@@ -157,11 +169,7 @@ func splitRoles(v *string) []string {
 	return out
 }
 func (a *App) readAnnouncements(r *http.Request, where string, args ...any) ([]announcementResponse, error) {
-	uid := 0
-	if p := a.optionalPrincipal(r); p != nil {
-		uid = p.ID
-	}
-	args = append(args, uid)
+	args = append(args, currentPrincipal(r).ID)
 	uidPos := len(args)
 	q := `SELECT a.id,a.title,a.content,a.type,a.image_path,a.target_roles,a.hidden_for_roles,a.active_from,a.active_until,a.created_at,(SELECT count(*) FROM sisges.announcement_like l WHERE l.announcement_id=a.id),(SELECT count(*)>0 FROM sisges.announcement_like l WHERE l.announcement_id=a.id AND l.user_id=$` + strconv.Itoa(uidPos) + `),(SELECT count(*) FROM sisges.announcement_comment c WHERE c.announcement_id=a.id AND c.deleted_at IS NULL),u.id,u.name,u.profile_image_path FROM sisges.announcement a LEFT JOIN sisges.users u ON u.id=a.created_by WHERE a.deleted_at IS NULL AND ` + where + ` ORDER BY a.created_at DESC LIMIT 500`
 	rows, err := a.db.Query(r.Context(), q, args...)
@@ -182,17 +190,32 @@ func (a *App) readAnnouncements(r *http.Request, where string, args ...any) ([]a
 	}
 	return out, rows.Err()
 }
+
+const visibleAnnouncement = `(a.active_from IS NULL OR a.active_from<=now())
+	AND (a.active_until IS NULL OR a.active_until>=now())
+	AND (a.hidden_for_roles IS NULL OR NOT ($1=ANY(string_to_array(a.hidden_for_roles,','))))`
+
 func (a *App) announcementFeed(w http.ResponseWriter, r *http.Request) {
-	role := "STUDENT"
-	if p := a.optionalPrincipal(r); p != nil {
-		role = p.Role
-	}
-	out, err := a.readAnnouncements(r, `(a.active_from IS NULL OR a.active_from<=now()) AND (a.active_until IS NULL OR a.active_until>=now()) AND (a.hidden_for_roles IS NULL OR NOT ($1=ANY(string_to_array(a.hidden_for_roles,','))))`, role)
+	out, err := a.readAnnouncements(r, visibleAnnouncement, currentPrincipal(r).Role)
 	if err != nil {
 		writeError(w, internalError(err))
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func (a *App) checkAnnouncementAccess(w http.ResponseWriter, r *http.Request, id int) bool {
+	var visible bool
+	err := a.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM sisges.announcement a
+		WHERE a.id=$2 AND a.deleted_at IS NULL AND (`+visibleAnnouncement+`))`, currentPrincipal(r).Role, id).Scan(&visible)
+	if err != nil {
+		writeError(w, internalError(err))
+		return false
+	}
+	if !visible {
+		writeError(w, resourceError("Anúncio"))
+	}
+	return visible
 }
 func (a *App) allAnnouncements(w http.ResponseWriter, r *http.Request) {
 	out, err := a.readAnnouncements(r, "true")
@@ -244,6 +267,14 @@ func (a *App) createAnnouncement(w http.ResponseWriter, r *http.Request) {
 	if req.Type == nil || (*req.Type != "TEXT" && *req.Type != "IMAGE") {
 		writeError(w, validationError("type", "Tipo deve ser TEXT ou IMAGE"))
 		return
+	}
+	if req.ImagePath != nil && *req.ImagePath != "" && currentPrincipal(r).Role != "ADMIN" {
+		image := *req.ImagePath
+		external := strings.HasPrefix(image, "https://") || strings.HasPrefix(image, "http://")
+		if !external && !validOwnedUpload(image, postImagePrefix, currentPrincipal(r).ID) {
+			writeError(w, validationError("imagePath", "Envie a imagem do aviso com a conta atual"))
+			return
+		}
 	}
 	if req.TTLHours != nil {
 		ok := false
@@ -351,6 +382,9 @@ func (a *App) toggleLike(w http.ResponseWriter, r *http.Request) {
 		writeError(w, e)
 		return
 	}
+	if !a.checkAnnouncementAccess(w, r, id) {
+		return
+	}
 	uid := currentPrincipal(r).ID
 	tag, err := a.db.Exec(r.Context(), `DELETE FROM sisges.announcement_like WHERE announcement_id=$1 AND user_id=$2`, id, uid)
 	if err != nil {
@@ -403,6 +437,9 @@ func (a *App) announcementComments(w http.ResponseWriter, r *http.Request) {
 		writeError(w, e)
 		return
 	}
+	if !a.checkAnnouncementAccess(w, r, id) {
+		return
+	}
 	out, err := a.comments(r, id)
 	if err != nil {
 		writeError(w, internalError(err))
@@ -414,6 +451,9 @@ func (a *App) createComment(w http.ResponseWriter, r *http.Request) {
 	id, e := pathInt(r, "id")
 	if e != nil {
 		writeError(w, e)
+		return
+	}
+	if !a.checkAnnouncementAccess(w, r, id) {
 		return
 	}
 	var req struct {
@@ -447,6 +487,9 @@ func (a *App) updateComment(w http.ResponseWriter, r *http.Request) {
 		writeError(w, e)
 		return
 	}
+	if !a.checkAnnouncementAccess(w, r, aid) {
+		return
+	}
 	var req struct {
 		Content string `json:"content"`
 	}
@@ -473,6 +516,9 @@ func (a *App) deleteComment(w http.ResponseWriter, r *http.Request) {
 		writeError(w, e)
 		return
 	}
+	if !a.checkAnnouncementAccess(w, r, aid) {
+		return
+	}
 	tag, err := a.db.Exec(r.Context(), `UPDATE sisges.announcement_comment SET deleted_at=now() WHERE id=$1 AND announcement_id=$2 AND user_id=$3 AND deleted_at IS NULL`, cid, aid, currentPrincipal(r).ID)
 	if err != nil {
 		writeError(w, internalError(err))
@@ -488,6 +534,9 @@ func (a *App) announcementLikes(w http.ResponseWriter, r *http.Request) {
 	id, e := pathInt(r, "id")
 	if e != nil {
 		writeError(w, e)
+		return
+	}
+	if !a.checkAnnouncementAccess(w, r, id) {
 		return
 	}
 	rows, err := a.db.Query(r.Context(), `SELECT u.id,u.name FROM sisges.announcement_like l JOIN sisges.users u ON u.id=l.user_id WHERE l.announcement_id=$1 ORDER BY l.created_at`, id)
