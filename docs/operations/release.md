@@ -2,6 +2,8 @@
 
 A branch `main` de cada repositório é a origem das imagens de produção. Ao receber commits, o GitHub Actions verifica a revisão e publica a imagem no Docker Hub com a tag `latest` e outra tag no formato `sha-<commit completo>`. A execução manual do fluxo de imagens também exige a referência `main`. Os fluxos que conectam ao servidor por SSH estão desativados. O operador do VPS é responsável por aplicar a publicação no servidor. [Fluxo da imagem do backend](../../.github/workflows/docker-publish.yml) · [Fluxo da imagem do frontend](https://github.com/SISGES/sisges-react-app/blob/main/.github/workflows/docker-publish.yml)
 
+As antigas branches `dev` foram retiradas dos dois repositórios. A tag `archive/dev` preserva os últimos commits para consulta histórica.
+
 ## Verificar a publicação no GitHub
 
 1. Identifique os commits do backend e do frontend e confira o resultado do fluxo de imagem de cada revisão. O backend executa testes em PostgreSQL com detecção de condições de corrida e `go vet`. O frontend executa a suíte integrada usando o backend de `main` antes de publicar a imagem.
